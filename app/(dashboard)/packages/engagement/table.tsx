@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { flexRender } from "@tanstack/react-table";
+import { flexRender, Table as TableType } from "@tanstack/react-table";
 import {
   Table,
   TableBody,
@@ -10,9 +10,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ClientDataTableProps } from "./types";
+import { EngagementPackage } from "./types";
 
-export function ClientDataTable<T>({ table }: ClientDataTableProps<T>) {
+interface Props {
+  table: TableType<EngagementPackage>;
+}
+
+export function EngagementPackageTable({ table }: Props) {
   return (
     <div className="rounded-md border">
       <Table>
@@ -27,7 +31,6 @@ export function ClientDataTable<T>({ table }: ClientDataTableProps<T>) {
             </TableRow>
           ))}
         </TableHeader>
-        
         <TableBody>
           {table.getRowModel().rows.length ? (
             table.getRowModel().rows.map((row) => (
@@ -42,7 +45,7 @@ export function ClientDataTable<T>({ table }: ClientDataTableProps<T>) {
           ) : (
             <TableRow>
               <TableCell colSpan={table.getAllColumns().length} className="text-center py-10">
-                No clients found.
+                No packages found.
               </TableCell>
             </TableRow>
           )}

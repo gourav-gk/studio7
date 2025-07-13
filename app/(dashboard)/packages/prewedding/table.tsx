@@ -10,9 +10,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ClientDataTableProps } from "./types";
+import type { Table as ReactTableType } from "@tanstack/react-table";
+import { PreweddingPackage } from "./types";
 
-export function ClientDataTable<T>({ table }: ClientDataTableProps<T>) {
+interface Props {
+  table: ReactTableType<PreweddingPackage>;
+}
+
+export function PreweddingPackageTable({ table }: Props) {
   return (
     <div className="rounded-md border">
       <Table>
@@ -27,7 +32,6 @@ export function ClientDataTable<T>({ table }: ClientDataTableProps<T>) {
             </TableRow>
           ))}
         </TableHeader>
-        
         <TableBody>
           {table.getRowModel().rows.length ? (
             table.getRowModel().rows.map((row) => (
@@ -42,7 +46,7 @@ export function ClientDataTable<T>({ table }: ClientDataTableProps<T>) {
           ) : (
             <TableRow>
               <TableCell colSpan={table.getAllColumns().length} className="text-center py-10">
-                No clients found.
+                No prewedding packages found.
               </TableCell>
             </TableRow>
           )}
