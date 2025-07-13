@@ -1,7 +1,22 @@
 "use client";
 
 import * as React from "react";
-import { BookOpen, Bot, Command, Settings2, SquareTerminal } from "lucide-react";
+import {
+  BookOpen,
+  Bot,
+  Command,
+  Settings2,
+  SquareTerminal,
+  Users,
+  Briefcase,
+ 
+  FolderKanban,
+  Camera,
+  ClipboardList,
+  CheckSquare,
+ 
+  IndianRupee,
+} from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
 import { NavUser } from "@/components/nav-user";
@@ -19,34 +34,82 @@ import { useAuth } from "@/context/AuthProvider";
 const data = {
   navMain: [
     {
-      title: "Dahboard",
+      title: "Dashboard",
       url: "/dashboard",
       icon: SquareTerminal,
+    },
+    {
+      title: "Employee",
+      url: "#",
+      icon: Users,
+      items: [
+        { title: "View", url: "/employee/view" },
+        { title: "Employee Task", url: "/employee/task" },
+        { title: "Attendance", url: "/employee/attendance" },
+        { title: "Salary", url: "/employee/salary" },
+      ],
+    },
+    {
+      title: "Packages",
+      url: "#",
+      icon: Briefcase,
+      items: [
+        { title: "Weddings", url: "/packages/weddings" },
+        { title: "Engagement", url: "/packages/engagement" },
+        { title: "Prewedding", url: "/packages/prewedding" },
+      ],
+    },
+    {
+      title: "Projects",
+      url: "#",
+      icon: BookOpen,
+      items: [
+        { title: "Add Project", url: "/projects/add" },
+        { title: "View Projects", url: "/projects/view" },
+      ],
+    },
+    {
+      title: "Clients",
+      url: "/clients",
+      icon: Bot,
+    },
+    {
+      title: "Shoots",
+      url: "/shoots",
+      icon: Camera,
+    },
+    {
+      title: "Deliverables",
+      url: "/deliverables",
+      icon: ClipboardList,
+    },
+    {
+      title: "Task",
+      url: "/task",
+      icon: FolderKanban,
+    },
+    {
+      title: "Attendance",
+      url: "/attendance",
+      icon: CheckSquare,
     },
     {
       title: "Enquiry",
       url: "/enquiry",
       icon: Bot,
-      // items: [
-      //   {
-      //     title: "Add New",
-      //     url: "#",
-      //   },
-      // ],
     },
     {
-      title: "Clients",
+      title: "Accounts",
       url: "#",
-      icon: Bot,
-    },
-    {
-      title: "Projects",
-      url: "/projects",
-      icon: BookOpen,
+      icon: IndianRupee,
+      items: [
+        { title: "Transaction", url: "/accounts/transaction" },
+        { title: "Salary", url: "/accounts/salary" },
+      ],
     },
     {
       title: "Settings",
-      url: "#",
+      url: "/settings",
       icon: Settings2,
     },
   ],

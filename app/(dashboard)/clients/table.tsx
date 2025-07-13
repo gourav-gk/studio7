@@ -10,9 +10,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { EnquiryDataTableProps } from "./types";
+import { ClientDataTableProps } from "./types";
 
-export function EnquiryDataTable<T>({ table }: EnquiryDataTableProps<T>) {
+export function ClientDataTable<T>({ table }: ClientDataTableProps<T>) {
   return (
     <div className="rounded-md border">
       <Table>
@@ -41,7 +41,7 @@ export function EnquiryDataTable<T>({ table }: EnquiryDataTableProps<T>) {
           ) : (
             <TableRow>
               <TableCell colSpan={table.getAllColumns().length} className="text-center py-10">
-                No enquiries found.
+                No clients found.
               </TableCell>
             </TableRow>
           )}
