@@ -17,11 +17,11 @@ import TableActions from "@/components/shared/TableActions";
 import Pagination from "@/components/shared/Pagination";
 import { EngagementPackage } from "./types";
 import { getEngagementColumns } from "./columns";
-import { EngagementPackageTable } from "./table";
 import AddEngagementPackageModal from "./AddEngagementPackageModal";
 import { collection, onSnapshot, setDoc, doc } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
 import { v4 as uuidv4 } from "uuid";
+import { GenericTable } from "@/components/shared/GenericTable";
 
 export default function EngagementPackagePage() {
   const [data, setData] = useState<EngagementPackage[]>([]);
@@ -88,7 +88,7 @@ export default function EngagementPackagePage() {
           menuContent={null}
           onOpenChange={() => setOpen(true)}
         />
-        <EngagementPackageTable table={table} />
+        <GenericTable table={table} />
         <Pagination table={table} />
       </div>
       <AddEngagementPackageModal

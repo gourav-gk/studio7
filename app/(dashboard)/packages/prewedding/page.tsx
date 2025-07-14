@@ -20,8 +20,8 @@ import { firestore } from "@/lib/firebase";
 
 import { PreweddingPackage } from "./types";
 import { getPreweddingColumns } from "./columns";
-import { PreweddingPackageTable } from "./table";
 import AddPreweddingPackageModal from "./AddPreweddingPackageModal";
+import { GenericTable } from "@/components/shared/GenericTable";
 
 export default function PreweddingPackagesPage() {
   const [data, setData] = useState<PreweddingPackage[]>([]);
@@ -93,7 +93,7 @@ export default function PreweddingPackagesPage() {
             setOpen(true);
           }}
         />
-        <PreweddingPackageTable table={table} />
+        <GenericTable table={table} />
         <Pagination table={table} />
       </div>
 

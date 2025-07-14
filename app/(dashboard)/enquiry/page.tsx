@@ -2,7 +2,6 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { EnquiryDataTable } from "./table";
 import TableActions from "@/components/shared/TableActions";
 import Pagination from "@/components/shared/Pagination";
 import {
@@ -18,14 +17,9 @@ import {
 import { getEnquiryColumns, menuContent } from "./columns";
 import AddEnquiryModal from "./AddEnquiryModal";
 import { Enquiry as EnquiryType } from "./types";
-import {
-  collection,
-  deleteDoc,
-  doc,
-  onSnapshot,
-  setDoc,
-} from "firebase/firestore";
+import { collection, deleteDoc, doc, onSnapshot, setDoc } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
+import { GenericTable } from "@/components/shared/GenericTable";
 
 function Enquiry() {
   const [data, setData] = useState<EnquiryType[]>([]);
@@ -106,11 +100,7 @@ function Enquiry() {
     }
   };
 
- const columns = useMemo(
-  () => getEnquiryColumns(handleEdit),
-  [handleEdit]
-);
-
+  const columns = useMemo(() => getEnquiryColumns(handleEdit), [handleEdit]);
 
   table.setOptions((prev) => ({ ...prev, columns }));
 
@@ -134,14 +124,10 @@ function Enquiry() {
           menuContent={menuContent(selectedRows, handleBulkDelete, handleBulkConvertToClient)}
           onOpenChange={onOpenChange}
         />
-        <EnquiryDataTable table={table} />
+        <GenericTable table={table} />
         <Pagination table={table} />
       </div>
-      <AddEnquiryModal
-        enquiry={selectedEnquiry}
-        open={open}
-        onOpenChange={handleClose}
-      />
+      <AddEnquiryModal enquiry={selectedEnquiry} open={open} onOpenChange={handleClose} />
     </ProtectedRoute>
   );
 }

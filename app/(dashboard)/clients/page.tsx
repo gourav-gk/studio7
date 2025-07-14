@@ -2,7 +2,6 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { ClientDataTable } from "./table";
 import TableActions from "@/components/shared/TableActions";
 import Pagination from "@/components/shared/Pagination";
 import {
@@ -20,6 +19,7 @@ import AddClientModal from "./AddClientModal";
 import { Client } from "./types";
 import { collection, deleteDoc, doc, onSnapshot } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
+import { GenericTable } from "@/components/shared/GenericTable";
 
 function Clients() {
   const [data, setData] = useState<Client[]>([]);
@@ -100,7 +100,7 @@ function Clients() {
           menuContent={menuContent(selectedRows, handleBulkDelete)}
           onOpenChange={onOpenChange}
         />
-        <ClientDataTable table={table} />
+        <GenericTable table={table} />
         <Pagination table={table} />
       </div>
       <AddClientModal client={selectedClient} open={open} onOpenChange={handleClose} />

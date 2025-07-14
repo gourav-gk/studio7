@@ -7,8 +7,8 @@ import { useReactTable, getCoreRowModel } from "@tanstack/react-table";
 import { getWeddingColumns } from "./columns";
 import { WeddingPackage } from "./types";
 import AddWeddingPackageModal from "./AddWeddingPackageModal";
-import { WeddingPackageTable } from "./table";
 import { Button } from "@/components/ui/button";
+import { GenericTable } from "@/components/shared/GenericTable";
 
 function WeddingPackagesPage() {
   const [packages, setPackages] = useState<WeddingPackage[]>([]);
@@ -49,7 +49,7 @@ function WeddingPackagesPage() {
         <h2 className="text-2xl font-bold">Wedding Packages</h2>
         <Button onClick={() => setOpen(true)}>Add Package</Button>
       </div>
-      <WeddingPackageTable table={table} />
+      <GenericTable table={table} />
       <AddWeddingPackageModal
         open={open}
         onClose={() => {

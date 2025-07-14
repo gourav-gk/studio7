@@ -9,12 +9,10 @@ import {
   SquareTerminal,
   Users,
   Briefcase,
- 
   FolderKanban,
   Camera,
   ClipboardList,
   CheckSquare,
- 
   IndianRupee,
 } from "lucide-react";
 
@@ -39,6 +37,25 @@ const data = {
       icon: SquareTerminal,
     },
     {
+      title: "Enquiry",
+      url: "/enquiry",
+      icon: Bot,
+    },
+    {
+      title: "Clients",
+      url: "/clients",
+      icon: Bot,
+    },
+    {
+      title: "Projects",
+      url: "#",
+      icon: BookOpen,
+      items: [
+        { title: "Add Project", url: "/projects/add" },
+        { title: "View Projects", url: "/projects/view" },
+      ],
+    },
+    {
       title: "Employee",
       url: "#",
       icon: Users,
@@ -60,20 +77,6 @@ const data = {
       ],
     },
     {
-      title: "Projects",
-      url: "#",
-      icon: BookOpen,
-      items: [
-        { title: "Add Project", url: "/projects/add" },
-        { title: "View Projects", url: "/projects/view" },
-      ],
-    },
-    {
-      title: "Clients",
-      url: "/clients",
-      icon: Bot,
-    },
-    {
       title: "Shoots",
       url: "/shoots",
       icon: Camera,
@@ -92,11 +95,6 @@ const data = {
       title: "Attendance",
       url: "/attendance",
       icon: CheckSquare,
-    },
-    {
-      title: "Enquiry",
-      url: "/enquiry",
-      icon: Bot,
     },
     {
       title: "Accounts",
