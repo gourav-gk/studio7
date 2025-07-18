@@ -1,61 +1,52 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import TableActions from "@/components/shared/TableActions";
+import Pagination from "@/components/shared/Pagination";
+import TableSkeleton from "@/components/shared/skeletons/TableSkeleton";
 import {
   ColumnFiltersState,
-  SortingState,
-  VisibilityState,
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
+  SortingState,
   useReactTable,
+  VisibilityState,
 } from "@tanstack/react-table";
-
-import ProtectedRoute from "@/components/ProtectedRoute";
-import TableActions from "@/components/shared/TableActions";
-import Pagination from "@/components/shared/Pagination";
-import { EngagementPackage } from "./types";
 import { getEngagementColumns } from "./columns";
 import AddEngagementPackageModal from "./AddEngagementPackageModal";
-import { collection, onSnapshot, setDoc, doc } from "firebase/firestore";
+import { EngagementPackage } from "./types";
+import { collection, onSnapshot, doc, setDoc } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
-import { v4 as uuidv4 } from "uuid";
 import { GenericTable } from "@/components/shared/GenericTable";
+import { v4 as uuidv4 } from "uuid";
 
-export default function EngagementPackagePage() {
+export default function EngagementPackages() {
+  const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState<EngagementPackage[]>([]);
-  const [open, setOpen] = useState(false);
-  const [selected, setSelected] = useState<EngagementPackage | null>(null);
-
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
-
-  // Fetch real-time data from Firestore
-  useEffect(() => {
-    const unsubscribe = onSnapshot(collection(firestore, "engagementPackages"), (snapshot) => {
-      const result: EngagementPackage[] = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...(doc.data() as Omit<EngagementPackage, "id">),
-      }));
-      setData(result);
-    });
-
-    return () => unsubscribe();
-  }, []);
+  const [open, setOpen] = useState(false);
+  const [selectedPackage, setSelectedPackage] = useState<EngagementPackage | null>(null);
 
   const handleEdit = useCallback((pkg: EngagementPackage) => {
-    setSelected(pkg);
+    setSelectedPackage(pkg);
     setOpen(true);
+  }, []);
+
+  const handleClose = useCallback(() => {
+    setSelectedPackage(null);
+    setOpen(false);
   }, []);
 
   const handleSave = async (pkg: EngagementPackage) => {
     const id = pkg.id || `ENG-${uuidv4().slice(0, 4).toUpperCase()}`;
     await setDoc(doc(firestore, "engagementPackages", id), { ...pkg, id }, { merge: true });
     setOpen(false);
-    setSelected(null);
+    setSelectedPackage(null);
   };
 
   const columns = useMemo(() => getEngagementColumns(handleEdit), [handleEdit]);
@@ -79,27 +70,38 @@ export default function EngagementPackagePage() {
     },
   });
 
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(firestore, "engagementPackages"), (snapshot) => {
+      const result = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        name: doc.data().name || "",
+        price: doc.data().price || 0,
+        features: doc.data().features || [],
+        ...doc.data(),
+      })) as EngagementPackage[];
+      setData(result);
+      setIsLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
   return (
-    <ProtectedRoute>
-      <div className="w-full">
-        <TableActions
-          table={table}
-          data={data}
-          menuContent={null}
-          onOpenChange={() => setOpen(true)}
-        />
-        <GenericTable table={table} />
-        <Pagination table={table} />
-      </div>
-      <AddEngagementPackageModal
-        open={open}
-        onClose={() => {
-          setOpen(false);
-          setSelected(null);
-        }}
+    <div className="w-full">
+      {isLoading ? (
+        <TableSkeleton columnCount={4} rowCount={5} />
+      ) : (
+        <>
+          <TableActions table={table} data={data} onOpenChange={setOpen} />
+          <GenericTable table={table} />
+          <Pagination table={table} />
+        </>
+      )}
+      <AddEngagementPackageModal 
+        initialData={selectedPackage} 
+        open={open} 
+        onClose={handleClose}
         onSave={handleSave}
-        initialData={selected}
       />
-    </ProtectedRoute>
+    </div>
   );
 }

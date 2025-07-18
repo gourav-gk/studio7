@@ -7,7 +7,6 @@ interface sortbaleButtonProps {
 }
 
 function SortButton({ onClick, isAsc }: sortbaleButtonProps) {
-  console.log(isAsc);
   return (
     <Button variant="ghost" onClick={onClick}>
       Name

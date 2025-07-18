@@ -3,6 +3,7 @@
 import { useAuth } from "@/context/AuthProvider";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import LoadingSpinner from "./shared/LoadingSpinner";
 
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, permissions, isAuthLoaded } = useAuth();
@@ -27,7 +28,14 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
     setAllowed(true);
   }, [user, permissions, pathname, isAuthLoaded]);
 
-  if (!isAuthLoaded) return <div className="text-center mt-10">Checking access...</div>;
-
-  return allowed ? <>{children}</> : null;
+  return (
+    <>
+      {children}
+      {(!isAuthLoaded || !allowed) && (
+        <div className="fixed inset-0 bg-white/50 backdrop-blur-[2px] z-50">
+          <LoadingSpinner message="Checking access..." />
+        </div>
+      )}
+    </>
+  );
 }

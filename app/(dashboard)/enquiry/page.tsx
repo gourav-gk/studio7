@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import ProtectedRoute from "@/components/ProtectedRoute";
 import TableActions from "@/components/shared/TableActions";
 import Pagination from "@/components/shared/Pagination";
+import TableSkeleton from "@/components/shared/skeletons/TableSkeleton";
 import {
   ColumnFiltersState,
   getCoreRowModel,
@@ -21,18 +21,31 @@ import { collection, deleteDoc, doc, onSnapshot, setDoc } from "firebase/firesto
 import { firestore } from "@/lib/firebase";
 import { GenericTable } from "@/components/shared/GenericTable";
 
-function Enquiry() {
+export default function Enquiry() {
+  const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState<EnquiryType[]>([]);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
-  const [open, onOpenChange] = useState(false);
+  const [open, setOpen] = useState(false);
   const [selectedEnquiry, setSelectedEnquiry] = useState<EnquiryType | null>(null);
+
+  const handleEdit = useCallback((enquiry: EnquiryType) => {
+    setSelectedEnquiry(enquiry);
+    setOpen(true);
+  }, []);
+
+  const handleClose = useCallback(() => {
+    setSelectedEnquiry(null);
+    setOpen(false);
+  }, []);
+
+  const columns = useMemo(() => getEnquiryColumns(handleEdit), [handleEdit]);
 
   const table = useReactTable({
     data,
-    columns: [], // temp placeholder until defined below
+    columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
@@ -51,17 +64,7 @@ function Enquiry() {
 
   const selectedRows = useMemo(() => {
     return table.getSelectedRowModel().rows.map((row) => row.original);
-  }, [rowSelection]);
-
-  const handleEdit = useCallback((enquiry: EnquiryType) => {
-    setSelectedEnquiry(enquiry);
-    onOpenChange(true);
-  }, []);
-
-  const handleClose = useCallback(() => {
-    setSelectedEnquiry(null);
-    onOpenChange(false);
-  }, []);
+  }, [table, rowSelection]);
 
   const handleBulkDelete = async (enquiries: EnquiryType[]) => {
     try {
@@ -79,7 +82,6 @@ function Enquiry() {
   const handleBulkConvertToClient = async (enquiries: EnquiryType[]) => {
     try {
       const clientsRef = collection(firestore, "clients");
-
       const convertPromises = enquiries.map((enquiry) => {
         const modifiedId = enquiry.enquiryId.replace(/^enquiry/, "client");
         return setDoc(doc(clientsRef, modifiedId), {
@@ -100,10 +102,6 @@ function Enquiry() {
     }
   };
 
-  const columns = useMemo(() => getEnquiryColumns(handleEdit), [handleEdit]);
-
-  table.setOptions((prev) => ({ ...prev, columns }));
-
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(firestore, "enquiry"), (snapshot) => {
       const result: EnquiryType[] = snapshot.docs.map((doc) => ({
@@ -111,25 +109,28 @@ function Enquiry() {
         ...doc.data(),
       })) as EnquiryType[];
       setData(result);
+      setIsLoading(false);
     });
     return () => unsubscribe();
   }, []);
 
   return (
-    <ProtectedRoute>
-      <div className="w-full">
-        <TableActions
-          table={table}
-          data={data}
-          menuContent={menuContent(selectedRows, handleBulkDelete, handleBulkConvertToClient)}
-          onOpenChange={onOpenChange}
-        />
-        <GenericTable table={table} />
-        <Pagination table={table} />
-      </div>
+    <div className="w-full">
+      {isLoading ? (
+        <TableSkeleton columnCount={6} rowCount={5} />
+      ) : (
+        <>
+          <TableActions
+            table={table}
+            data={data}
+            menuContent={menuContent(selectedRows, handleBulkDelete, handleBulkConvertToClient)}
+            onOpenChange={setOpen}
+          />
+          <GenericTable table={table} />
+          <Pagination table={table} />
+        </>
+      )}
       <AddEnquiryModal enquiry={selectedEnquiry} open={open} onOpenChange={handleClose} />
-    </ProtectedRoute>
+    </div>
   );
 }
-
-export default Enquiry;
