@@ -5,7 +5,6 @@ import {
   BookOpen,
   Bot,
   Command,
-  Settings2,
   SquareTerminal,
   Users,
   Briefcase,
@@ -104,11 +103,6 @@ const data = {
         { title: "Transaction", url: "/accounts/transaction" },
         { title: "Salary", url: "/accounts/salary" },
       ],
-    },
-    {
-      title: "Settings",
-      url: "/settings",
-      icon: Settings2,
     },
   ],
 };

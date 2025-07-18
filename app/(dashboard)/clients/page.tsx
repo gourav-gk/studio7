@@ -17,9 +17,11 @@ import {
 import { getClientColumns } from "./columns";
 import AddClientModal from "./AddClientModal";
 import { Client } from "./types";
-import { collection, onSnapshot } from "firebase/firestore";
+import { collection, deleteDoc, doc, onSnapshot } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
 import { GenericTable } from "@/components/shared/GenericTable";
+import { menuContent } from "@/components/shared/TableMenuContent";
+import { toast } from "sonner";
 
 export default function Clients() {
   const [isLoading, setIsLoading] = useState(true);
@@ -74,13 +76,41 @@ export default function Clients() {
     return () => unsubscribe();
   }, []);
 
+  const handleBulkDelete = async (clients: Client[]) => {
+    try {
+      const deletePromises = clients.map((client) =>
+        deleteDoc(doc(firestore, "clients", client.clientId))
+      );
+      await Promise.all(deletePromises);
+      setRowSelection({});
+      toast.success("Selected clients deleted successfully.");
+    } catch (error) {
+      console.error("Bulk delete failed:", error);
+      toast.error("Failed to delete selected clients.");
+    }
+  };
+
   return (
     <div className="w-full">
       {isLoading ? (
         <TableSkeleton columnCount={6} rowCount={5} />
       ) : (
         <>
-          <TableActions table={table} data={data} onOpenChange={setOpen} />
+          <TableActions
+            table={table}
+            data={data}
+            menuContent={menuContent({
+              selectedRows: table.getSelectedRowModel().rows.map((row) => row.original),
+              actions: [
+                {
+                  label: "Delete Selected",
+                  onClick: handleBulkDelete,
+                  className: "text-red-600",
+                },
+              ],
+            })}
+            onOpenChange={setOpen}
+          />
           <GenericTable table={table} />
           <Pagination table={table} />
         </>

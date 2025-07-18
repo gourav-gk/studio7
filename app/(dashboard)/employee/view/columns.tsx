@@ -36,7 +36,13 @@ export function getEmployeeColumns(onEdit: (emp: Employee) => void): ColumnDef<E
     },
     {
       accessorKey: "empId",
-      header: () => <Button variant="ghost">Emp ID</Button>,
+      header: ({ column }) => (
+        <SortButton
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          isAsc={column.getIsSorted() === "asc"}
+          label="Emp ID"
+        />
+      ),
       cell: ({ row }) => <div>{row.getValue("empId")}</div>,
     },
     {
@@ -45,42 +51,52 @@ export function getEmployeeColumns(onEdit: (emp: Employee) => void): ColumnDef<E
         <SortButton
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           isAsc={column.getIsSorted() === "asc"}
+          label="Name"
         />
       ),
       cell: ({ row }) => <div>{row.getValue("name")}</div>,
     },
     {
       accessorKey: "email",
-      header: "Email",
+      header: ({ column }) => (
+        <SortButton
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          isAsc={column.getIsSorted() === "asc"}
+          label="Email"
+        />
+      ),
       cell: ({ row }) => <div>{row.getValue("email")}</div>,
     },
     {
       accessorKey: "phone",
       header: "Phone",
       cell: ({ row }) => <div>{row.getValue("phone")}</div>,
+      enableSorting: false,
     },
     {
       accessorKey: "gender",
       header: "Gender",
       cell: ({ row }) => <div>{row.getValue("gender")}</div>,
+      enableSorting: false,
     },
     {
       accessorKey: "profileStatus",
       header: "Status",
       cell: ({ row }) => <div>{row.getValue("profileStatus")}</div>,
+      enableSorting: false,
     },
-
     {
       accessorKey: "salary",
       header: "Salary",
       cell: ({ row }) => <div>{row.getValue("salary")}</div>,
+      enableSorting: false,
     },
     {
       accessorKey: "salaryStatus",
       header: "Salary Status",
       cell: ({ row }) => <div>{row.getValue("salaryStatus")}</div>,
+      enableSorting: false,
     },
-    
     {
       id: "actions",
       header: "Actions",
@@ -100,6 +116,7 @@ export function getEmployeeColumns(onEdit: (emp: Employee) => void): ColumnDef<E
           </DropdownMenu>
         );
       },
+      enableSorting: false,
     },
   ];
 }

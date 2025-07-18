@@ -9,9 +9,32 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal } from "lucide-react";
 import { WeddingPackage } from "./types";
+import { Checkbox } from "@/components/ui/checkbox";
 
-export function getWeddingColumns(onEdit: (pkg: WeddingPackage) => void): ColumnDef<WeddingPackage>[] {
+export function getWeddingColumns(
+  onEdit: (pkg: WeddingPackage) => void
+): ColumnDef<WeddingPackage>[] {
   return [
+    {
+      id: "select",
+      header: ({ table }) => (
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && "indeterminate")
+          }
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    },
     {
       accessorKey: "name",
       header: "Package Name",
@@ -22,21 +45,19 @@ export function getWeddingColumns(onEdit: (pkg: WeddingPackage) => void): Column
       header: "Price",
       cell: ({ row }) => <div>₹ {row.getValue("price")}</div>,
     },
-/*************  ✨ Windsurf Command ⭐  *************/
-/**
- * Renders a button for editing a wedding package.
- * The button triggers the `onEdit` function with the original wedding package data
- * when clicked.
- *
- * @param {Object} param - The parameter object.
- * @param {Object} param.row - The row object containing the wedding package data.
- * @returns {JSX.Element} A button element for editing the wedding package.
- */
-
-/*******  2cce8a44-a699-4bb4-a0fc-922487b24078  *******/    {
+    {
       accessorKey: "features",
       header: "Features",
-      cell: ({ row }) => <div>{row.getValue("features")}</div>,
+      cell: ({ row }) => {
+        const features = row.getValue("features");
+        if (Array.isArray(features)) {
+          return <div>{features.join(", ")}</div>;
+        }
+        if (typeof features === "string") {
+          return <div>{features}</div>;
+        }
+        return <div>-</div>;
+      },
     },
     {
       id: "actions",

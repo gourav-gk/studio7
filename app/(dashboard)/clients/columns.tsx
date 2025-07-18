@@ -1,4 +1,3 @@
-// columns.tsx
 import { ColumnDef } from "@tanstack/react-table";
 import SortButton from "@/components/shared/sortButton";
 import { Client } from "./types";
@@ -85,15 +84,3 @@ export function getClientColumns(onEdit: (client: Client) => void): ColumnDef<Cl
     },
   ];
 }
-
-export const menuContent = (
-  selectedRows: Client[],
-  onBulkDelete: (clients: Client[]) => void
-) => (
-  <DropdownMenuContent align="end">
-    <DropdownMenuLabel>Bulk Actions</DropdownMenuLabel>
-    <DropdownMenuItem onClick={() => onBulkDelete(selectedRows)}>
-      Delete
-    </DropdownMenuItem>
-  </DropdownMenuContent>
-);

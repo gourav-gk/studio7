@@ -1,4 +1,3 @@
-// columns.tsx
 import { ColumnDef } from "@tanstack/react-table";
 import SortButton from "@/components/shared/sortButton";
 import { Enquiry } from "./types";
@@ -14,31 +13,39 @@ import {
 import { MoreHorizontal } from "lucide-react";
 import { firestore } from "@/lib/firebase";
 import { collection, deleteDoc, doc, setDoc } from "firebase/firestore";
-
-async function convertToClient(enquiry: Enquiry) {
-  try {
-    const clientsRef = collection(firestore, "clients");
-    const modifiedId = enquiry.enquiryId.replace(/^enquiry/, "client");
-
-    await setDoc(doc(clientsRef, modifiedId), {
-      name: enquiry.name,
-      phoneNo: enquiry.phoneNo,
-      address: enquiry.address,
-      source: "enquiry",
-      originalEnquiryId: modifiedId,
-      createdAt: new Date().toISOString(),
-    });
-
-    alert(`Converted to client with ID: ${modifiedId}`);
-  } catch (error) {
-    console.error("Conversion error:", error);
-    alert("Failed to convert enquiry to client.");
-  }
-}
+import { toast } from "sonner";
 
 export function getEnquiryColumns(
-  onEdit: (enquiry: Enquiry) => void
+  onEdit: (enquiry: Enquiry) => void,
+  onRowSelectionChange?: (value: Record<string, boolean>) => void
 ): ColumnDef<Enquiry>[] {
+  const handleConvertToClient = async (enquiry: Enquiry) => {
+    try {
+      const clientsRef = collection(firestore, "clients");
+      const modifiedId = enquiry.enquiryId.replace(/^enquiry/, "client");
+
+      await setDoc(doc(clientsRef, modifiedId), {
+        name: enquiry.name,
+        phoneNo: enquiry.phoneNo,
+        address: enquiry.address,
+        source: "enquiry",
+        originalEnquiryId: modifiedId,
+        createdAt: new Date().toISOString(),
+      });
+
+      await deleteDoc(doc(firestore, "enquiry", enquiry.enquiryId));
+      
+      // Reset row selection
+      if (onRowSelectionChange) {
+        onRowSelectionChange({});
+      }
+      
+      toast.success(`Converted to client with ID: ${modifiedId}`);
+    } catch (error) {
+      console.error("Conversion error:", error);
+      toast.error("Failed to convert enquiry to client");
+    }
+  };
 
   return [
     {
@@ -102,7 +109,7 @@ export function getEnquiryColumns(
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
               <DropdownMenuItem onClick={() => onEdit(enquiry)}>Edit</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => convertToClient(enquiry)}>
+              <DropdownMenuItem onClick={() => handleConvertToClient(enquiry)}>
                 Convert to Client
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -113,33 +120,4 @@ export function getEnquiryColumns(
       enableHiding: false,
     },
   ];
-}
-
-export const menuContent = (
-  selectedRows: Enquiry[],
-  onBulkDelete: (enquiries: Enquiry[]) => void,
-  onBulkConvert: (enquiries: Enquiry[]) => void
-) => (
-  <DropdownMenuContent align="end">
-    <DropdownMenuLabel>Bulk Actions</DropdownMenuLabel>
-    <DropdownMenuItem onClick={() => onBulkDelete(selectedRows)}>
-      Delete
-    </DropdownMenuItem>
-    <DropdownMenuItem onClick={() => onBulkConvert(selectedRows)}>
-      Convert to Client
-    </DropdownMenuItem>
-  </DropdownMenuContent>
-);
-
-export async function handleBulkDelete(enquiries: Enquiry[]) {
-  try {
-    const deletePromises = enquiries.map((enquiry) =>
-      deleteDoc(doc(firestore, "enquiry", enquiry.enquiryId))
-    );
-    await Promise.all(deletePromises);
-    alert("Selected enquiries deleted successfully.");
-  } catch (error) {
-    console.error("Bulk delete failed:", error);
-    alert("Failed to delete selected enquiries.");
-  }
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { EmployeeDataTable } from "./table";
+import { GenericTable } from "@/components/shared/GenericTable";
 import TableActions from "@/components/shared/TableActions";
 import Pagination from "@/components/shared/Pagination";
 import TableSkeleton from "@/components/shared/skeletons/TableSkeleton";
@@ -18,8 +18,9 @@ import {
 import { getEmployeeColumns } from "./columns";
 import AddEmployeeModal from "./AddEmployeeModal";
 import { Employee } from "./types";
-import { collection, onSnapshot } from "firebase/firestore";
+import { collection, deleteDoc, doc, onSnapshot } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
+import { menuContent } from "@/components/shared/TableMenuContent";
 
 export default function Employees() {
   const [isLoading, setIsLoading] = useState(true);
@@ -62,6 +63,23 @@ export default function Employees() {
     },
   });
 
+  const selectedRows = useMemo(() => {
+    return table.getSelectedRowModel().rows.map((row) => row.original);
+  }, [table, rowSelection]);
+
+  const handleBulkDelete = async (employees: Employee[]) => {
+    try {
+      const deletePromises = employees.map((employee) =>
+        deleteDoc(doc(firestore, "users", employee.uId))
+      );
+      await Promise.all(deletePromises);
+      alert("Selected employees deleted successfully.");
+    } catch (error) {
+      console.error("Bulk delete failed:", error);
+      alert("Failed to delete selected employees.");
+    }
+  };
+
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(firestore, "users"), (snapshot) => {
       const result: Employee[] = snapshot.docs.map((doc) => {
@@ -83,6 +101,7 @@ export default function Employees() {
           assignedCompany: data.assignedCompany ?? {},
           salaryHistory: data.salaryHistory ?? {},
           accessLevelMap: data.accessLevelMap ?? {},
+          salaryStatus: data.salaryStatus ?? "Unpaid",
         };
       });
 
@@ -99,8 +118,22 @@ export default function Employees() {
         <TableSkeleton columnCount={6} rowCount={5} />
       ) : (
         <>
-          <TableActions table={table} data={data} onOpenChange={setOpen} />
-          <EmployeeDataTable columns={columns} data={data} />
+          <TableActions 
+            table={table} 
+            data={data} 
+            menuContent={menuContent({
+              selectedRows,
+              actions: [
+                {
+                  label: "Delete Selected",
+                  onClick: handleBulkDelete,
+                  className: "text-red-600"
+                }
+              ]
+            })}
+            onOpenChange={setOpen} 
+          />
+          <GenericTable table={table} />
           <Pagination table={table} />
         </>
       )}

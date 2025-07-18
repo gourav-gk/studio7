@@ -10,9 +10,30 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export function getPreweddingColumns(onEdit: (pkg: PreweddingPackage) => void): ColumnDef<PreweddingPackage>[] {
   return [
+    {
+      id: "select",
+      header: ({ table }) => (
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && "indeterminate")
+          }
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    },
     {
       accessorKey: "id",
       header: "Package ID",
@@ -36,6 +57,16 @@ export function getPreweddingColumns(onEdit: (pkg: PreweddingPackage) => void): 
     {
       accessorKey: "features",
       header: "Features",
+      cell: ({ row }) => {
+        const features = row.getValue("features");
+        if (Array.isArray(features)) {
+          return <div>{features.join(", ")}</div>;
+        }
+        if (typeof features === "string") {
+          return <div>{features}</div>;
+        }
+        return <div>-</div>;
+      },
     },
     {
       id: "actions",

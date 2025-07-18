@@ -13,6 +13,8 @@ export interface Employee {
   createdAt: string;
   assignedCompany: Record<string, AssignedCompanyDetails>;
   salaryHistory: Record<string, SalaryRecord>;
+  accessLevelMap: Record<string, string>;
+  salaryStatus: string;
 }
 
 export interface AssignedCompanyDetails {

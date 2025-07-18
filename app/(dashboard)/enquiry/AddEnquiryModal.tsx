@@ -14,7 +14,8 @@ import React, { useEffect, useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Enquiry } from "./types";
 import { firestore } from "@/lib/firebase";
-import {  doc, setDoc } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
+import { toast } from "sonner";
 
 interface AddEnquiryModalProps {
   enquiry?: Enquiry | null;
@@ -22,11 +23,7 @@ interface AddEnquiryModalProps {
   onOpenChange?: () => void;
 }
 
-function AddEnquiryModal({
-  enquiry,
-  open,
-  onOpenChange,
-}: AddEnquiryModalProps) {
+function AddEnquiryModal({ enquiry, open, onOpenChange }: AddEnquiryModalProps) {
   const [formData, setFormData] = useState({
     name: "",
     phoneNo: "",
@@ -66,50 +63,50 @@ function AddEnquiryModal({
           address: formData.address,
         },
         { merge: true }
-      ); // 🔥 This ensures update if document already exists
+      );
 
-      alert(enquiry ? "Enquiry updated!" : "Enquiry added!");
-      onOpenChange?.(); // Close modal
+      toast.success(enquiry ? "Enquiry updated successfully" : "Enquiry added successfully");
+      onOpenChange?.();
     } catch (error) {
       console.error("Error saving enquiry:", error);
-      alert("Failed to save enquiry");
+      toast.error("Failed to save enquiry");
     }
   };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>{enquiry ? "Edit Enquiry" : "Add Enquiry"}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 py-2">
-          <div>
-            <label className="text-sm font-medium">Name</label>
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
             <Input
+              placeholder="Name"
               value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
-              placeholder="Enter name"
+              onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
             />
           </div>
-          <div>
-            <label className="text-sm font-medium">Phone Number</label>
+          <div className="space-y-2">
             <Input
+              placeholder="Phone Number"
               value={formData.phoneNo}
-              onChange={(e) =>
-                setFormData({ ...formData, phoneNo: e.target.value })
-              }
-              placeholder="Enter phone number"
+              type="text"
+              maxLength={10}
+              pattern="\d*"
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, "");
+                if (value.length <= 10) {
+                  setFormData((prev) => ({ ...prev, phoneNo: value }));
+                }
+              }}
             />
           </div>
-          <div>
-            <label className="text-sm font-medium">Address</label>
+          <div className="space-y-2">
             <Textarea
+              placeholder="Address"
               value={formData.address}
-              onChange={(e) =>
-                setFormData({ ...formData, address: e.target.value })
-              }
-              placeholder="Enter address"
+              onChange={(e) => setFormData((prev) => ({ ...prev, address: e.target.value }))}
             />
           </div>
         </div>
@@ -117,11 +114,11 @@ function AddEnquiryModal({
           <DialogClose asChild>
             <Button variant="outline">Cancel</Button>
           </DialogClose>
-          <Button onClick={handleSubmit}>{enquiry ? "Update" : "Add"}</Button>
+          <Button onClick={handleSubmit}>Save</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
 
-export default React.memo(AddEnquiryModal);
+export default AddEnquiryModal;

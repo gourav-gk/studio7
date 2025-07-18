@@ -1,6 +1,6 @@
 export interface PreweddingPackage {
-  id: string;
+  id?: string;
   name: string;
   price: number;
-  features: string;
+  features: string[];
 }

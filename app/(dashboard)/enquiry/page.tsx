@@ -14,12 +14,14 @@ import {
   useReactTable,
   VisibilityState,
 } from "@tanstack/react-table";
-import { getEnquiryColumns, menuContent } from "./columns";
+import { getEnquiryColumns } from "./columns";
 import AddEnquiryModal from "./AddEnquiryModal";
 import { Enquiry as EnquiryType } from "./types";
 import { collection, deleteDoc, doc, onSnapshot, setDoc } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
 import { GenericTable } from "@/components/shared/GenericTable";
+import { menuContent } from "@/components/shared/TableMenuContent";
+import { toast } from "sonner";
 
 export default function Enquiry() {
   const [isLoading, setIsLoading] = useState(true);
@@ -41,7 +43,10 @@ export default function Enquiry() {
     setOpen(false);
   }, []);
 
-  const columns = useMemo(() => getEnquiryColumns(handleEdit), [handleEdit]);
+  const columns = useMemo(
+    () => getEnquiryColumns(handleEdit, setRowSelection),
+    [handleEdit]
+  );
 
   const table = useReactTable({
     data,
@@ -72,19 +77,21 @@ export default function Enquiry() {
         deleteDoc(doc(firestore, "enquiry", enquiry.enquiryId))
       );
       await Promise.all(deletePromises);
-      alert("Selected enquiries deleted successfully.");
+      setRowSelection({});
+      toast.success("Selected enquiries deleted successfully");
     } catch (error) {
       console.error("Bulk delete failed:", error);
-      alert("Failed to delete selected enquiries.");
+      toast.error("Failed to delete selected enquiries");
     }
   };
 
-  const handleBulkConvertToClient = async (enquiries: EnquiryType[]) => {
+  const handleBulkConvert = async (enquiries: EnquiryType[]) => {
     try {
-      const clientsRef = collection(firestore, "clients");
-      const convertPromises = enquiries.map((enquiry) => {
+      const convertPromises = enquiries.map(async (enquiry) => {
+        const clientsRef = collection(firestore, "clients");
         const modifiedId = enquiry.enquiryId.replace(/^enquiry/, "client");
-        return setDoc(doc(clientsRef, modifiedId), {
+
+        await setDoc(doc(clientsRef, modifiedId), {
           name: enquiry.name,
           phoneNo: enquiry.phoneNo,
           address: enquiry.address,
@@ -92,13 +99,16 @@ export default function Enquiry() {
           originalEnquiryId: modifiedId,
           createdAt: new Date().toISOString(),
         });
+
+        await deleteDoc(doc(firestore, "enquiry", enquiry.enquiryId));
       });
 
       await Promise.all(convertPromises);
-      alert("Selected enquiries converted to clients.");
+      setRowSelection({});
+      toast.success("Selected enquiries converted to clients successfully");
     } catch (error) {
       console.error("Bulk convert failed:", error);
-      alert("Failed to convert selected enquiries.");
+      toast.error("Failed to convert selected enquiries to clients");
     }
   };
 
@@ -106,11 +116,14 @@ export default function Enquiry() {
     const unsubscribe = onSnapshot(collection(firestore, "enquiry"), (snapshot) => {
       const result: EnquiryType[] = snapshot.docs.map((doc) => ({
         enquiryId: doc.id,
-        ...doc.data(),
-      })) as EnquiryType[];
+        name: doc.data().name || "",
+        phoneNo: doc.data().phoneNo || "",
+        address: doc.data().address || "",
+      }));
       setData(result);
       setIsLoading(false);
     });
+
     return () => unsubscribe();
   }, []);
 
@@ -123,7 +136,20 @@ export default function Enquiry() {
           <TableActions
             table={table}
             data={data}
-            menuContent={menuContent(selectedRows, handleBulkDelete, handleBulkConvertToClient)}
+            menuContent={menuContent({
+              selectedRows,
+              actions: [
+                {
+                  label: "Delete Selected",
+                  onClick: handleBulkDelete,
+                  className: "text-red-600",
+                },
+                {
+                  label: "Convert to Client",
+                  onClick: handleBulkConvert,
+                },
+              ],
+            })}
             onOpenChange={setOpen}
           />
           <GenericTable table={table} />

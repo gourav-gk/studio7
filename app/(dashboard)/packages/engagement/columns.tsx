@@ -9,9 +9,30 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export function getEngagementColumns(onEdit: (pkg: EngagementPackage) => void): ColumnDef<EngagementPackage>[] {
   return [
+    {
+      id: "select",
+      header: ({ table }) => (
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && "indeterminate")
+          }
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    },
     {
       accessorKey: "name",
       header: "Package Name",
@@ -25,7 +46,16 @@ export function getEngagementColumns(onEdit: (pkg: EngagementPackage) => void): 
     {
       accessorKey: "features",
       header: "Features",
-      cell: ({ row }) => <div>{row.getValue("features")}</div>,
+      cell: ({ row }) => {
+        const features = row.getValue("features");
+        if (Array.isArray(features)) {
+          return <div>{features.join(", ")}</div>;
+        }
+        if (typeof features === "string") {
+          return <div>{features}</div>;
+        }
+        return <div>-</div>;
+      },
     },
     {
       id: "actions",

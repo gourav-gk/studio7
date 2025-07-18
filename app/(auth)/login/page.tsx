@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -22,60 +23,54 @@ export default function LoginPage() {
       localStorage.setItem("permissions", "dashboard,projects,users,enquiry,clients,packages,engagement,prewedding,employee");
       router.push("/dashboard");
     } catch (error) {
-      if (error instanceof Error) alert(error.message);
+      if (error instanceof Error) {
+        toast.error(error.message);
+      }
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <main className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 px-4">
-      <div className="w-full max-w-sm bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Login to Dashboard
-          </h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Welcome back! Please enter your credentials.
-          </p>
+    <div className="flex min-h-screen items-center justify-center">
+      <div className="w-full max-w-sm space-y-4 rounded-lg border p-6 shadow-lg">
+        <div className="space-y-2 text-center">
+          <h1 className="text-2xl font-bold">Login</h1>
+          <p className="text-gray-500">Enter your credentials to continue</p>
         </div>
-
         <div className="space-y-4">
-          <div className="space-y-1">
+          <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
+              placeholder="Enter your email"
               type="email"
-              placeholder="name@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              disabled={loading}
             />
           </div>
-
-          <div className="space-y-1">
+          <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
             <Input
               id="password"
+              placeholder="Enter your password"
               type="password"
-              placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              disabled={loading}
             />
           </div>
-
-          <Button className="w-full" onClick={handleLogin} disabled={loading}>
+          <Button
+            className="w-full"
+            onClick={handleLogin}
+            disabled={loading}
+          >
             {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing in...
-              </>
-            ) : (
-              "Login"
-            )}
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : null}
+            {loading ? "Logging in..." : "Login"}
           </Button>
         </div>
       </div>
-    </main>
+    </div>
   );
 }
