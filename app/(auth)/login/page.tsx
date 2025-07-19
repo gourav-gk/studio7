@@ -20,7 +20,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      localStorage.setItem("permissions", "dashboard,projects,users,enquiry,clients,packages,engagement,prewedding,employee");
+      localStorage.setItem("permissions", "dashboard,deliverables,shoots,projects,users,enquiry,clients,employee,packages,engagement,prewedding");
       router.push("/dashboard");
     } catch (error) {
       if (error instanceof Error) {

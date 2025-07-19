@@ -1,0 +1,125 @@
+"use client";
+
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import TableActions from "@/components/shared/TableActions";
+import Pagination from "@/components/shared/Pagination";
+import TableSkeleton from "@/components/shared/skeletons/TableSkeleton";
+import {
+  ColumnFiltersState,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  SortingState,
+  useReactTable,
+  VisibilityState,
+} from "@tanstack/react-table";
+import { getDeliverableColumns } from "./columns";
+import AddDeliverableModal from "./AddDeliverableModal";
+import { Deliverable } from "./types";
+import { collection, deleteDoc, doc, onSnapshot, Timestamp } from "firebase/firestore";
+import { firestore } from "@/lib/firebase";
+import { GenericTable } from "@/components/shared/GenericTable";
+import { menuContent } from "@/components/shared/TableMenuContent";
+import { toast } from "sonner";
+
+export default function Deliverables() {
+  const [isLoading, setIsLoading] = useState(true);
+  const [data, setData] = useState<Deliverable[]>([]);
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [rowSelection, setRowSelection] = useState({});
+  const [open, setOpen] = useState(false);
+  const [selectedDeliverable, setSelectedDeliverable] = useState<Deliverable | null>(null);
+
+  const handleEdit = useCallback((deliverable: Deliverable) => {
+    setSelectedDeliverable(deliverable);
+    setOpen(true);
+  }, []);
+
+  const handleClose = useCallback(() => {
+    setSelectedDeliverable(null);
+    setOpen(false);
+  }, []);
+
+  const columns = useMemo(() => getDeliverableColumns(handleEdit), [handleEdit]);
+
+  const table = useReactTable({
+    data,
+    columns,
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    onColumnVisibilityChange: setColumnVisibility,
+    onRowSelectionChange: setRowSelection,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    state: {
+      sorting,
+      columnFilters,
+      columnVisibility,
+      rowSelection,
+    },
+  });
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(firestore, "deliverables"), (snapshot) => {
+      const result: Deliverable[] = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          name: data.name,
+          createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
+        };
+      });
+      setData(result);
+      setIsLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleBulkDelete = async (deliverables: Deliverable[]) => {
+    try {
+      const deletePromises = deliverables.map((d) =>
+        deleteDoc(doc(firestore, "deliverables", d.id))
+      );
+      await Promise.all(deletePromises);
+      setRowSelection({});
+      toast.success("Selected deliverables deleted successfully.");
+    } catch (error) {
+      console.error("Bulk delete failed:", error);
+      toast.error("Failed to delete selected deliverables.");
+    }
+  };
+
+  return (
+    <div className="w-full">
+      {isLoading ? (
+        <TableSkeleton columnCount={3} rowCount={5} />
+      ) : (
+        <>
+          <TableActions
+            table={table}
+            data={data}
+            menuContent={menuContent({
+              selectedRows: table.getSelectedRowModel().rows.map((row) => row.original),
+              actions: [
+                {
+                  label: "Delete Selected",
+                  onClick: handleBulkDelete,
+                  className: "text-red-600",
+                },
+              ],
+            })}
+            onOpenChange={setOpen}
+          />
+          <GenericTable table={table} />
+          <Pagination table={table} />
+        </>
+      )}
+      <AddDeliverableModal deliverable={selectedDeliverable} open={open} onOpenChange={handleClose} />
+    </div>
+  );
+}
