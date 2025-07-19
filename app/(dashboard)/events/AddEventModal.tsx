@@ -11,7 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import React, { useEffect, useState } from "react";
-import { Deliverable } from "./types";
+import { Event } from "./types";
 import { firestore } from "@/lib/firebase";
 import {
   doc,
@@ -22,47 +22,47 @@ import {
 } from "firebase/firestore";
 import { toast } from "sonner";
 
-interface AddDeliverableModalProps {
-  deliverable?: Deliverable | null;
+interface AddEventModalProps {
+  event?: Event | null;
   open: boolean;
   onOpenChange?: () => void;
 }
 
-function AddDeliverableModal({
-  deliverable,
+function AddEventModal({
+  event,
   open,
   onOpenChange,
-}: AddDeliverableModalProps) {
+}: AddEventModalProps) {
   const [name, setName] = useState("");
 
   useEffect(() => {
-    if (deliverable) {
-      setName(deliverable.name);
+    if (event) {
+      setName(event.name);
     } else {
       setName("");
     }
-  }, [deliverable, open]);
+  }, [event, open]);
 
   const handleSubmit = async () => {
-    const isEdit = Boolean(deliverable);
-    const docId = deliverable?.deliverableId; // Changed from deliverable?.id to deliverable?.deliverableId
+    const isEdit = Boolean(event);
+    const docId = event?.eventId;
 
     try {
       if (isEdit && docId) {
-        const ref = doc(firestore, "deliverables", docId);
+        const ref = doc(firestore, "events", docId);
         await setDoc(ref, { name }, { merge: true });
       } else {
-        await addDoc(collection(firestore, "deliverables"), {
+        await addDoc(collection(firestore, "events"), {
           name,
           createdAt: serverTimestamp(),
         });
       }
 
-      toast.success(isEdit ? "Deliverable updated" : "Deliverable added");
+      toast.success(isEdit ? "Event updated" : "Event added");
       onOpenChange?.();
     } catch (error) {
-      console.error("Error saving deliverable:", error);
-      toast.error("Failed to save deliverable");
+      console.error("Error saving event:", error);
+      toast.error("Failed to save event");
     }
   };
 
@@ -71,12 +71,12 @@ function AddDeliverableModal({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {deliverable ? "Edit Deliverable" : "Add Deliverable"}
+            {event ? "Edit Event" : "Add Event"}
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <Input
-            placeholder="Deliverable Name"
+            placeholder="Event Name"
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
@@ -94,4 +94,4 @@ function AddDeliverableModal({
   );
 }
 
-export default AddDeliverableModal;
+export default AddEventModal; 

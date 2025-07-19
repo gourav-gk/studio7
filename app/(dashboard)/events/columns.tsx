@@ -1,7 +1,7 @@
+"use client";
+
 import { ColumnDef } from "@tanstack/react-table";
-import { EngagementPackage } from "./types";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,9 +9,13 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { MoreHorizontal } from "lucide-react";
+import { Event } from "./types";
 import { Checkbox } from "@/components/ui/checkbox";
 
-export function getEngagementColumns(onEdit: (pkg: EngagementPackage) => void): ColumnDef<EngagementPackage>[] {
+export function getEventColumns(
+  onEdit: (event: Event) => void
+): ColumnDef<Event>[] {
   return [
     {
       id: "select",
@@ -35,33 +39,22 @@ export function getEngagementColumns(onEdit: (pkg: EngagementPackage) => void): 
     },
     {
       accessorKey: "name",
-      header: "Package Name",
+      header: "Event Name",
       cell: ({ row }) => <div>{row.getValue("name")}</div>,
     },
     {
-      accessorKey: "price",
-      header: "Price",
-      cell: ({ row }) => <div>₹{row.getValue("price")}</div>,
-    },
-    {
-      accessorKey: "features",
-      header: "Features",
+      accessorKey: "createdAt",
+      header: "Created At",
       cell: ({ row }) => {
-        const features = row.getValue("features");
-        if (Array.isArray(features)) {
-          return <div>{features.join(", ")}</div>;
-        }
-        if (typeof features === "string") {
-          return <div>{features}</div>;
-        }
-        return <div>-</div>;
+        const date = row.getValue("createdAt") as Date;
+        return <div>{date.toLocaleDateString()}</div>;
       },
     },
     {
       id: "actions",
       header: "Actions",
       cell: ({ row }) => {
-        const pkg = row.original;
+        const event = row.original;
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -71,11 +64,11 @@ export function getEngagementColumns(onEdit: (pkg: EngagementPackage) => void): 
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => onEdit(pkg)}>Edit</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onEdit(event)}>Edit</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         );
       },
     },
   ];
-}
+} 

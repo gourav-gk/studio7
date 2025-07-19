@@ -13,9 +13,11 @@ import {
   SortingState,
   VisibilityState,
 } from "@tanstack/react-table";
-import { getWeddingColumns } from "./columns";
-import { WeddingPackage } from "./types";
-import AddWeddingPackageModal from "./AddWeddingPackageModal";
+import { getPackageColumns } from "./columns";
+import { Package } from "./types";
+import { Event } from "../events/types";
+import AddPackageModal from "./AddPackageModal";
+import ViewPackageModal from "./ViewPackageModal";
 import { GenericTable } from "@/components/shared/GenericTable";
 import TableActions from "@/components/shared/TableActions";
 import TableSkeleton from "@/components/shared/skeletons/TableSkeleton";
@@ -24,35 +26,61 @@ import { v4 as uuidv4 } from "uuid";
 import { menuContent } from "@/components/shared/TableMenuContent";
 import { toast } from "sonner";
 
-function WeddingPackagesPage() {
+function PackagesPage() {
   const [isLoading, setIsLoading] = useState(true);
-  const [packages, setPackages] = useState<WeddingPackage[]>([]);
+  const [packages, setPackages] = useState<Package[]>([]);
+  const [events, setEvents] = useState<Record<string, Event>>({});
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
   const [open, setOpen] = useState(false);
-  const [selected, setSelected] = useState<WeddingPackage | null>(null);
+  const [viewOpen, setViewOpen] = useState(false);
+  const [selected, setSelected] = useState<Package | null>(null);
+  const [viewPackage, setViewPackage] = useState<Package | null>(null);
 
   useEffect(() => {
-    const unsub = onSnapshot(collection(firestore, "wedding-packages"), (snapshot) => {
-      const data = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        name: doc.data().name || "",
-        price: doc.data().price || 0,
-        features: doc.data().features || [],
-        ...doc.data(),
-      })) as WeddingPackage[];
+    const unsubscribe = onSnapshot(collection(firestore, "events"), (snapshot) => {
+      const eventsData = snapshot.docs.reduce((acc, doc) => {
+        acc[doc.id] = { ...doc.data(), eventId: doc.id } as Event;
+        return acc;
+      }, {} as Record<string, Event>);
+      setEvents(eventsData);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const unsub = onSnapshot(collection(firestore, "packages"), (snapshot) => {
+      const data = snapshot.docs.map((doc) => {
+        const docData = doc.data();
+        return {
+          id: doc.id,
+          name: docData.name || "",
+          price: docData.price || 0,
+          eventId: docData.eventId || "",
+          shoots: docData.shoots || [],
+          deliverables: docData.deliverables || [],
+          createdAt: docData.createdAt,
+        } as Package;
+      });
       setPackages(data);
       setIsLoading(false);
     });
     return () => unsub();
   }, []);
 
-  const handleSave = async (pkg: WeddingPackage) => {
+  const packagesWithEventNames = useMemo(() => {
+    return packages.map(pkg => ({
+      ...pkg,
+      eventName: events[pkg.eventId]?.name || "Loading..."
+    }));
+  }, [packages, events]);
+
+  const handleSave = async (pkg: Package) => {
     try {
-      const id = pkg.id || `WED-${uuidv4().slice(0, 4).toUpperCase()}`;
-      await setDoc(doc(firestore, "wedding-packages", id), { ...pkg, id }, { merge: true });
+      const id = pkg.id || `PKG-${uuidv4().slice(0, 4).toUpperCase()}`;
+      await setDoc(doc(firestore, "packages", id), { ...pkg, id }, { merge: true });
       toast.success(pkg.id ? "Package updated successfully" : "Package created successfully");
       setOpen(false);
       setSelected(null);
@@ -62,7 +90,7 @@ function WeddingPackagesPage() {
     }
   };
 
-  const handleEdit = useCallback((pkg: WeddingPackage) => {
+  const handleEdit = useCallback((pkg: Package) => {
     setSelected(pkg);
     setOpen(true);
   }, []);
@@ -72,11 +100,21 @@ function WeddingPackagesPage() {
     setSelected(null);
   }, []);
 
-  const handleBulkDelete = async (selectedPackages: WeddingPackage[]) => {
+  const handleView = useCallback((pkg: Package) => {
+    setViewPackage(pkg);
+    setViewOpen(true);
+  }, []);
+
+  const handleViewClose = useCallback(() => {
+    setViewOpen(false);
+    setViewPackage(null);
+  }, []);
+
+  const handleBulkDelete = async (selectedPackages: Package[]) => {
     try {
       const deletePromises = selectedPackages.map((pkg) => {
         if (!pkg.id) throw new Error("Package ID is required for deletion");
-        return deleteDoc(doc(firestore, "wedding-packages", pkg.id));
+        return deleteDoc(doc(firestore, "packages", pkg.id));
       });
       await Promise.all(deletePromises);
       setRowSelection({});
@@ -87,10 +125,13 @@ function WeddingPackagesPage() {
     }
   };
 
-  const columns = useMemo(() => getWeddingColumns(handleEdit), [handleEdit]);
+  const columns = useMemo(
+    () => getPackageColumns(handleEdit, handleView),
+    [handleEdit, handleView]
+  );
 
   const table = useReactTable({
-    data: packages,
+    data: packagesWithEventNames,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -137,14 +178,14 @@ function WeddingPackagesPage() {
           <Pagination table={table} />
         </>
       )}
-      <AddWeddingPackageModal
+      <AddPackageModal
         initialData={selected}
         open={open}
         onClose={handleClose}
         onSave={handleSave}
       />
+      <ViewPackageModal data={viewPackage} open={viewOpen} onClose={handleViewClose} />
     </div>
   );
 }
-
-export default WeddingPackagesPage;
+export default PackagesPage;

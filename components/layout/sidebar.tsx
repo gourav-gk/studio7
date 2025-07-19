@@ -13,6 +13,7 @@ import {
   ClipboardList,
   CheckSquare,
   IndianRupee,
+  Calendar,
 } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
@@ -66,14 +67,14 @@ const data = {
       ],
     },
     {
+      title: "Events",
+      url: "/events",
+      icon: Calendar,
+    },
+    {
       title: "Packages",
-      url: "#",
+      url: "/packages",
       icon: Briefcase,
-      items: [
-        { title: "Weddings", url: "/packages/weddings" },
-        { title: "Engagement", url: "/packages/engagement" },
-        { title: "Prewedding", url: "/packages/prewedding" },
-      ],
     },
     {
       title: "Shoots",

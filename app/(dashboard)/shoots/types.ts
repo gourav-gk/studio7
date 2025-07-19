@@ -1,10 +1,10 @@
 export interface Shoot {
-  id: string;
+  shootId: string;
   name: string;
-  traditionalPhotographer: number;
-  traditionalVideographer: number;
-  camId: number;
-  cinemetographer: number;
-  assistant: number;
-  other: number;
+  traditionalPhotographer: string;
+  traditionalVideographer: string;
+  camId: string;
+  cinemetographer: string;
+  assistant: string;
+  other: string;
 }

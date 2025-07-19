@@ -1,3 +1,5 @@
+"use client";
+
 import { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import {
@@ -8,12 +10,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal } from "lucide-react";
-import { WeddingPackage } from "./types";
+import { Package } from "./types";
 import { Checkbox } from "@/components/ui/checkbox";
 
-export function getWeddingColumns(
-  onEdit: (pkg: WeddingPackage) => void
-): ColumnDef<WeddingPackage>[] {
+export function getPackageColumns(
+  onEdit: (pkg: Package) => void,
+  onView: (pkg: Package) => void
+): ColumnDef<Package>[] {
   return [
     {
       id: "select",
@@ -36,6 +39,11 @@ export function getWeddingColumns(
       enableHiding: false,
     },
     {
+      accessorKey: "eventName",
+      header: "Event",
+      cell: ({ row }) => <div>{row.getValue("eventName")}</div>,
+    },
+    {
       accessorKey: "name",
       header: "Package Name",
       cell: ({ row }) => <div>{row.getValue("name")}</div>,
@@ -44,20 +52,6 @@ export function getWeddingColumns(
       accessorKey: "price",
       header: "Price",
       cell: ({ row }) => <div>₹ {row.getValue("price")}</div>,
-    },
-    {
-      accessorKey: "features",
-      header: "Features",
-      cell: ({ row }) => {
-        const features = row.getValue("features");
-        if (Array.isArray(features)) {
-          return <div>{features.join(", ")}</div>;
-        }
-        if (typeof features === "string") {
-          return <div>{features}</div>;
-        }
-        return <div>-</div>;
-      },
     },
     {
       id: "actions",
@@ -73,6 +67,9 @@ export function getWeddingColumns(
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => onView(pkg)} className="text-blue-600">
+                View Details
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => onEdit(pkg)}>Edit</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

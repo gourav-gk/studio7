@@ -68,10 +68,25 @@ export default function Deliverables() {
     const unsubscribe = onSnapshot(collection(firestore, "deliverables"), (snapshot) => {
       const result: Deliverable[] = snapshot.docs.map((doc) => {
         const data = doc.data();
+        let createdAt: Date;
+        if (data.createdAt instanceof Timestamp) {
+          createdAt = data.createdAt.toDate();
+        } else if (
+          typeof data.createdAt === "object" &&
+          data.createdAt !== null &&
+          "seconds" in data.createdAt
+        ) {
+          createdAt = new Date(data.createdAt.seconds * 1000);
+        } else if (typeof data.createdAt === "string") {
+          createdAt = new Date(data.createdAt);
+        } else {
+          createdAt = new Date();
+        }
+
         return {
-          id: doc.id,
+          deliverableId: doc.id,
           name: data.name,
-          createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
+          createdAt,
         };
       });
       setData(result);
@@ -82,8 +97,8 @@ export default function Deliverables() {
 
   const handleBulkDelete = async (deliverables: Deliverable[]) => {
     try {
-      const deletePromises = deliverables.map((d) =>
-        deleteDoc(doc(firestore, "deliverables", d.id))
+      const deletePromises = deliverables.map((deliverable) =>
+        deleteDoc(doc(firestore, "deliverables", deliverable.deliverableId))
       );
       await Promise.all(deletePromises);
       setRowSelection({});
@@ -97,7 +112,7 @@ export default function Deliverables() {
   return (
     <div className="w-full">
       {isLoading ? (
-        <TableSkeleton columnCount={3} rowCount={5} />
+        <TableSkeleton columnCount={6} rowCount={5} />
       ) : (
         <>
           <TableActions
@@ -119,7 +134,11 @@ export default function Deliverables() {
           <Pagination table={table} />
         </>
       )}
-      <AddDeliverableModal deliverable={selectedDeliverable} open={open} onOpenChange={handleClose} />
+      <AddDeliverableModal
+        deliverable={selectedDeliverable}
+        open={open}
+        onOpenChange={handleClose}
+      />
     </div>
   );
 }

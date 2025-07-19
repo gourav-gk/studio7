@@ -1,5 +1,5 @@
 export interface Deliverable {
-  id: string;
+  deliverableId: string;
   name: string;
   createdAt: Date;
 }

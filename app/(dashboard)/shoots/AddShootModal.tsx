@@ -31,12 +31,12 @@ interface AddShootModalProps {
 function AddShootModal({ shoot, open, onOpenChange }: AddShootModalProps) {
   const [form, setForm] = useState({
     name: "",
-    traditionalPhotographer: 0,
-    traditionalVideographer: 0,
-    camId: 0,
-    cinemetographer: 0,
-    assistant: 0,
-    other: 0,
+    traditionalPhotographer: "0",
+    traditionalVideographer: "0",
+    camId: "0",
+    cinemetographer: "0",
+    assistant: "0",
+    other: "0",
   });
 
   useEffect(() => {
@@ -53,27 +53,27 @@ function AddShootModal({ shoot, open, onOpenChange }: AddShootModalProps) {
     } else {
       setForm({
         name: "",
-        traditionalPhotographer: 0,
-        traditionalVideographer: 0,
-        camId: 0,
-        cinemetographer: 0,
-        assistant: 0,
-        other: 0,
+        traditionalPhotographer: "0",
+        traditionalVideographer: "0",
+        camId: "0",
+        cinemetographer: "0",
+        assistant: "0",
+        other: "0",
       });
     }
   }, [shoot, open]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type } = e.target;
+    const { name, value } = e.target;
     setForm((prev) => ({
       ...prev,
-      [name]: type === "number" ? Number(value) : value,
+      [name]: value,
     }));
   };
 
   const handleSubmit = async () => {
     const isEdit = Boolean(shoot);
-    const docId = shoot?.id;
+    const docId = shoot?.shootId;
     try {
       if (isEdit && docId) {
         const ref = doc(firestore, "shoots", docId);

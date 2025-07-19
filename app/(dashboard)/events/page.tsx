@@ -14,36 +14,36 @@ import {
   useReactTable,
   VisibilityState,
 } from "@tanstack/react-table";
-import { getShootColumns } from "./columns";
-import AddShootModal from "./AddShootModal";
-import { Shoot } from "./types";
-import { collection, deleteDoc, doc, onSnapshot } from "firebase/firestore";
+import { getEventColumns } from "./columns";
+import AddEventModal from "./AddEventModal";
+import { Event } from "./types";
+import { collection, deleteDoc, doc, onSnapshot, Timestamp } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
 import { GenericTable } from "@/components/shared/GenericTable";
 import { menuContent } from "@/components/shared/TableMenuContent";
 import { toast } from "sonner";
 
-export default function Shoots() {
+export default function Events() {
   const [isLoading, setIsLoading] = useState(true);
-  const [data, setData] = useState<Shoot[]>([]);
+  const [data, setData] = useState<Event[]>([]);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
   const [open, setOpen] = useState(false);
-  const [selectedShoot, setSelectedShoot] = useState<Shoot | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
 
-  const handleEdit = useCallback((shoot: Shoot) => {
-    setSelectedShoot(shoot);
+  const handleEdit = useCallback((event: Event) => {
+    setSelectedEvent(event);
     setOpen(true);
   }, []);
 
   const handleClose = useCallback(() => {
-    setSelectedShoot(null);
+    setSelectedEvent(null);
     setOpen(false);
   }, []);
 
-  const columns = useMemo(() => getShootColumns(handleEdit), [handleEdit]);
+  const columns = useMemo(() => getEventColumns(handleEdit), [handleEdit]);
 
   const table = useReactTable({
     data,
@@ -65,35 +65,54 @@ export default function Shoots() {
   });
 
   useEffect(() => {
-    const unsubscribe = onSnapshot(collection(firestore, "shoots"), (snapshot) => {
-      const result: Shoot[] = snapshot.docs.map((doc) => ({
-        shootId: doc.id,
-        ...doc.data(),
-      })) as Shoot[];
+    const unsubscribe = onSnapshot(collection(firestore, "events"), (snapshot) => {
+      const result: Event[] = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        let createdAt: Date;
+        if (data.createdAt instanceof Timestamp) {
+          createdAt = data.createdAt.toDate();
+        } else if (
+          typeof data.createdAt === "object" &&
+          data.createdAt !== null &&
+          "seconds" in data.createdAt
+        ) {
+          createdAt = new Date(data.createdAt.seconds * 1000);
+        } else if (typeof data.createdAt === "string") {
+          createdAt = new Date(data.createdAt);
+        } else {
+          createdAt = new Date();
+        }
+
+        return {
+          eventId: doc.id,
+          name: data.name,
+          createdAt,
+        };
+      });
       setData(result);
       setIsLoading(false);
     });
     return () => unsubscribe();
   }, []);
 
-  const handleBulkDelete = async (shoots: Shoot[]) => {
+  const handleBulkDelete = async (events: Event[]) => {
     try {
-      const deletePromises = shoots.map((shoot) =>
-        deleteDoc(doc(firestore, "shoots", shoot.shootId))
+      const deletePromises = events.map((event) =>
+        deleteDoc(doc(firestore, "events", event.eventId))
       );
       await Promise.all(deletePromises);
       setRowSelection({});
-      toast.success("Selected shoots deleted successfully.");
+      toast.success("Selected events deleted successfully.");
     } catch (error) {
       console.error("Bulk delete failed:", error);
-      toast.error("Failed to delete selected shoots.");
+      toast.error("Failed to delete selected events.");
     }
   };
 
   return (
     <div className="w-full">
       {isLoading ? (
-        <TableSkeleton columnCount={6} rowCount={5} />
+        <TableSkeleton columnCount={3} rowCount={5} />
       ) : (
         <>
           <TableActions
@@ -115,7 +134,11 @@ export default function Shoots() {
           <Pagination table={table} />
         </>
       )}
-      <AddShootModal shoot={selectedShoot} open={open} onOpenChange={handleClose} />
+      <AddEventModal
+        event={selectedEvent}
+        open={open}
+        onOpenChange={handleClose}
+      />
     </div>
   );
 }
