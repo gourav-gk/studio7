@@ -31,6 +31,7 @@ export interface Event {
 export interface Package {
   packageId: string;
   name: string;
+  eventId: string; // Added to link package to event
 }
 
 export interface Shoot {

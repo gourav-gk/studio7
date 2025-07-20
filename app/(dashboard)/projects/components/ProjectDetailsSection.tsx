@@ -6,11 +6,11 @@ interface ProjectDetailsSectionProps {
   formData: {
     event: string;
     package: string;
-    shoot: string;
+    // shoot: string; // Remove shoot
   };
   events: Event[];
   packages: Package[];
-  shoots: Shoot[];
+  // shoots: Shoot[]; // Remove shoots
   onInputChange: (field: string, value: string | number) => void;
 }
 
@@ -18,7 +18,7 @@ export function ProjectDetailsSection({
   formData,
   events,
   packages,
-  shoots,
+  // shoots, // Remove shoots
   onInputChange,
 }: ProjectDetailsSectionProps) {
   const eventOptions = events.map(event => ({
@@ -27,14 +27,11 @@ export function ProjectDetailsSection({
   }));
 
   const packageOptions = packages.map(pkg => ({
-    id: pkg.packageId,
+    id: pkg.packageId, // use packageId as value
     name: pkg.name,
   }));
 
-  const shootOptions = shoots.map(shoot => ({
-    id: shoot.shootId,
-    name: shoot.name,
-  }));
+  // Remove shootOptions
 
   return (
     <div className="bg-white rounded-lg border p-4">
@@ -60,15 +57,7 @@ export function ProjectDetailsSection({
           required
         />
 
-        <FormField
-          label="Shoot"
-          type="select"
-          value={formData.shoot}
-          onChange={(value) => onInputChange("shoot", value)}
-          placeholder="Select shoot"
-          options={shootOptions}
-          required
-        />
+        {/* Remove Shoot dropdown */}
       </div>
     </div>
   );

@@ -47,7 +47,7 @@ export function BasicInformationSection({
         />
 
         <DatePicker
-          label="Date/Dates"
+          label="Date"
           value={formData.dates}
           onChange={(date) => onInputChange("dates", date)}
           placeholder="Select date"
@@ -55,7 +55,7 @@ export function BasicInformationSection({
         />
 
         <FormField
-          label="Venue/Venues"
+          label="Venue"
           value={formData.venues}
           onChange={(value) => onInputChange("venues", value)}
           placeholder="Enter venue(s)"

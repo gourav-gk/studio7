@@ -8,6 +8,8 @@ import { ProjectDetailsSection } from "../components/ProjectDetailsSection";
 import { FinancialSection } from "../components/FinancialSection";
 import { DeliverablesSection } from "../components/DeliverablesSection";
 import { NotesSection } from "../components/NotesSection";
+import { ShootTableSection } from "../components/ShootTableSection";
+import { DeliverablesTableSection } from "../components/DeliverablesTableSection";
 
 export default function AddProject() {
   const {
@@ -21,6 +23,12 @@ export default function AddProject() {
     handleInputChange,
     handleDeliverableChange,
     handleSubmit,
+    shootTableData,
+    handleShootTableChange,
+    handleAddShootRow,
+    deliverablesTableData,
+    handleDeliverablesTableChange,
+    handleAddDeliverableRow,
   } = useProjectForm();
 
   return (
@@ -42,12 +50,24 @@ export default function AddProject() {
             formData={{
               event: formData.event,
               package: formData.package,
-              shoot: formData.shoot,
             }}
             events={events}
             packages={packages}
-            shoots={shoots}
             onInputChange={handleInputChange}
+          />
+
+          {/* Shoots Table Section */}
+          <ShootTableSection
+            shootsData={shootTableData}
+            onChange={handleShootTableChange}
+            onAddRow={handleAddShootRow}
+          />
+
+          {/* Deliverables Table Section */}
+          <DeliverablesTableSection
+            deliverablesData={deliverablesTableData}
+            onChange={handleDeliverablesTableChange}
+            onAddRow={handleAddDeliverableRow}
           />
 
           <FinancialSection
@@ -62,11 +82,12 @@ export default function AddProject() {
             onInputChange={handleInputChange}
           />
 
-          <DeliverablesSection
+          {/* Remove old DeliverablesSection */}
+          {/* <DeliverablesSection
             deliverables={deliverables}
             selectedDeliverables={formData.deliverables}
             onDeliverableChange={handleDeliverableChange}
-          />
+          /> */}
 
           <NotesSection
             note={formData.note}
