@@ -80,7 +80,15 @@ function PackagesPage() {
   const handleSave = async (pkg: Package) => {
     try {
       const id = pkg.id || `PKG-${uuidv4().slice(0, 4).toUpperCase()}`;
-      await setDoc(doc(firestore, "packages", id), { ...pkg, id }, { merge: true });
+      const isNewPackage = !pkg.id;
+      
+      const packageData = {
+        ...pkg,
+        id,
+        createdAt: isNewPackage ? new Date() : pkg.createdAt
+      };
+
+      await setDoc(doc(firestore, "packages", id), packageData, { merge: true });
       toast.success(pkg.id ? "Package updated successfully" : "Package created successfully");
       setOpen(false);
       setSelected(null);

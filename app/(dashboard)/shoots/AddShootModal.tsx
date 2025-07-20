@@ -11,15 +11,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import React, { useEffect, useState } from "react";
-import { Shoot } from "./types";
+import { Shoot, shootInitialState } from "./types";
 import { firestore } from "@/lib/firebase";
-import {
-  doc,
-  setDoc,
-  addDoc,
-  collection,
-  serverTimestamp,
-} from "firebase/firestore";
+import { doc, setDoc, addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { toast } from "sonner";
 
 interface AddShootModalProps {
@@ -29,15 +23,7 @@ interface AddShootModalProps {
 }
 
 function AddShootModal({ shoot, open, onOpenChange }: AddShootModalProps) {
-  const [form, setForm] = useState({
-    name: "",
-    traditionalPhotographer: "0",
-    traditionalVideographer: "0",
-    camId: "0",
-    cinemetographer: "0",
-    assistant: "0",
-    other: "0",
-  });
+  const [form, setForm] = useState(shootInitialState);
 
   useEffect(() => {
     if (shoot) {
@@ -45,21 +31,14 @@ function AddShootModal({ shoot, open, onOpenChange }: AddShootModalProps) {
         name: shoot.name,
         traditionalPhotographer: shoot.traditionalPhotographer,
         traditionalVideographer: shoot.traditionalVideographer,
-        camId: shoot.camId,
+        candid: shoot.candid,
         cinemetographer: shoot.cinemetographer,
         assistant: shoot.assistant,
+        drone: shoot.drone,
         other: shoot.other,
       });
     } else {
-      setForm({
-        name: "",
-        traditionalPhotographer: "0",
-        traditionalVideographer: "0",
-        camId: "0",
-        cinemetographer: "0",
-        assistant: "0",
-        other: "0",
-      });
+      setForm(shootInitialState);
     }
   }, [shoot, open]);
 
@@ -100,7 +79,9 @@ function AddShootModal({ shoot, open, onOpenChange }: AddShootModalProps) {
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <label htmlFor="name" className="text-sm font-medium">Name</label>
+            <label htmlFor="name" className="text-sm font-medium">
+              Name
+            </label>
             <Input
               id="name"
               name="name"
@@ -110,7 +91,9 @@ function AddShootModal({ shoot, open, onOpenChange }: AddShootModalProps) {
             />
           </div>
           <div className="space-y-2">
-            <label htmlFor="traditionalPhotographer" className="text-sm font-medium">Traditional Photographer</label>
+            <label htmlFor="traditionalPhotographer" className="text-sm font-medium">
+              Traditional Photographer
+            </label>
             <Input
               id="traditionalPhotographer"
               name="traditionalPhotographer"
@@ -122,7 +105,9 @@ function AddShootModal({ shoot, open, onOpenChange }: AddShootModalProps) {
             />
           </div>
           <div className="space-y-2">
-            <label htmlFor="traditionalVideographer" className="text-sm font-medium">Traditional Videographer</label>
+            <label htmlFor="traditionalVideographer" className="text-sm font-medium">
+              Traditional Videographer
+            </label>
             <Input
               id="traditionalVideographer"
               name="traditionalVideographer"
@@ -134,19 +119,23 @@ function AddShootModal({ shoot, open, onOpenChange }: AddShootModalProps) {
             />
           </div>
           <div className="space-y-2">
-            <label htmlFor="camId" className="text-sm font-medium">Cam ID</label>
+            <label htmlFor="candid" className="text-sm font-medium">
+              Candid
+            </label>
             <Input
-              id="camId"
-              name="camId"
+              id="candid"
+              name="candid"
               placeholder="Enter number"
               type="number"
-              value={form.camId}
+              value={form.candid}
               onChange={handleChange}
               min={0}
             />
           </div>
           <div className="space-y-2">
-            <label htmlFor="cinemetographer" className="text-sm font-medium">Cinemetographer</label>
+            <label htmlFor="cinemetographer" className="text-sm font-medium">
+              Cinemetographer
+            </label>
             <Input
               id="cinemetographer"
               name="cinemetographer"
@@ -158,7 +147,9 @@ function AddShootModal({ shoot, open, onOpenChange }: AddShootModalProps) {
             />
           </div>
           <div className="space-y-2">
-            <label htmlFor="assistant" className="text-sm font-medium">Assistant</label>
+            <label htmlFor="assistant" className="text-sm font-medium">
+              Assistant
+            </label>
             <Input
               id="assistant"
               name="assistant"
@@ -170,7 +161,23 @@ function AddShootModal({ shoot, open, onOpenChange }: AddShootModalProps) {
             />
           </div>
           <div className="space-y-2">
-            <label htmlFor="other" className="text-sm font-medium">Other</label>
+            <label htmlFor="drone" className="text-sm font-medium">
+              Drone
+            </label>
+            <Input
+              id="drone"
+              name="drone"
+              placeholder="Enter number"
+              type="number"
+              value={form.drone}
+              onChange={handleChange}
+              min={0}
+            />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="other" className="text-sm font-medium">
+              Other
+            </label>
             <Input
               id="other"
               name="other"

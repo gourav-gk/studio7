@@ -106,8 +106,10 @@ function ViewPackageModal({ data, open, onClose }: Props) {
                       <TableHead className="w-[150px]">Shoot Name</TableHead>
                       <TableHead className="w-[120px]">Photographer</TableHead>
                       <TableHead className="w-[120px]">Videographer</TableHead>
+                      <TableHead className="w-[120px]">Candid</TableHead>
                       <TableHead className="w-[120px]">Cinematographer</TableHead>
                       <TableHead className="w-[100px]">Assistant</TableHead>
+                      <TableHead className="w-[100px]">Drone</TableHead>
                       <TableHead className="w-[100px]">Other</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -120,8 +122,10 @@ function ViewPackageModal({ data, open, onClose }: Props) {
                           <TableCell className="font-medium">{shoot.name}</TableCell>
                           <TableCell>{shoot.traditionalPhotographer}</TableCell>
                           <TableCell>{shoot.traditionalVideographer}</TableCell>
+                          <TableCell>{shoot.candid}</TableCell>
                           <TableCell>{shoot.cinemetographer}</TableCell>
                           <TableCell>{shoot.assistant}</TableCell>
+                          <TableCell>{shoot.drone}</TableCell>
                           <TableCell>{shoot.other ?? 0}</TableCell>
                         </TableRow>
                       );

@@ -1,5 +1,5 @@
 import { ColumnDef } from "@tanstack/react-table";
-import { Project, Deliverable } from "./types";
+import { Project } from "./types";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -12,8 +12,7 @@ import { format } from "date-fns";
 
 export function getProjectColumns(
   onEdit: (project: Project) => void,
-  onView: (project: Project) => void,
-  deliverables: Deliverable[]
+  onView: (project: Project) => void
 ): ColumnDef<Project>[] {
   return [
     {
@@ -40,91 +39,112 @@ export function getProjectColumns(
     {
       accessorKey: "projectName",
       header: "Project Name",
-      cell: info => info.getValue(),
+      cell: (info) => info.getValue(),
       enableColumnFilter: true,
     },
     {
       accessorKey: "clientName",
       header: "Client Name",
-      cell: info => info.getValue(),
+      cell: (info) => info.getValue(),
     },
     {
       accessorKey: "dates",
       header: "Dates",
-      cell: info => info.getValue(),
+      cell: (info) => info.getValue(),
     },
     {
       accessorKey: "venues",
       header: "Venues",
-      cell: info => info.getValue(),
+      cell: (info) => info.getValue(),
     },
     {
       accessorKey: "event",
       header: "Event",
-      cell: info => info.getValue(),
+      cell: (info) => info.getValue(),
     },
     {
       accessorKey: "package",
       header: "Package",
-      cell: info => info.getValue(),
+      cell: (info) => info.getValue(),
     },
     {
-      accessorKey: "shoot",
-      header: "Shoot",
-      cell: info => info.getValue(),
+      accessorKey: "shoots",
+      header: "Shoots",
+      cell: ({ row }) => {
+        const shoots = row.original.shoots;
+        if (!shoots) {
+          // Handle old data structure
+          return row.original.shoot || "";
+        }
+        // Handle new data structure
+        return Array.isArray(shoots) ? shoots.map((s) => s.day).join(", ") : "";
+      },
     },
     {
       accessorKey: "deliverables",
       header: "Deliverables",
-      cell: info => {
-        const deliverableIds = info.getValue() as string[];
-        const deliverableNames = deliverableIds.map(id => {
-          const deliverable = deliverables.find(d => d.deliverableId === id);
-          return deliverable ? deliverable.name : id;
-        });
-        return deliverableNames.join(", ");
+      cell: ({ row }) => {
+        const deliverables = row.original.deliverables;
+        if (!deliverables) return "";
+
+        // Handle both old and new data structures
+        if (Array.isArray(deliverables)) {
+          if (typeof deliverables[0] === "string") {
+            // Old structure: array of strings
+            return deliverables.join(", ");
+          } else {
+            // New structure: array of objects
+            return deliverables
+              .map((d) => {
+                if (typeof d === "string") return d;
+                return `${d.name} (${d.qty})`;
+              })
+              .join(", ");
+          }
+        }
+        return "";
       },
     },
     {
       accessorKey: "price",
       header: "Price",
-      cell: info => `$${info.getValue()}`,
+      cell: (info) => `₹${info.getValue()}`,
       enableHiding: true,
     },
     {
       accessorKey: "extraExpenses",
       header: "Extra Expenses",
-      cell: info => `$${info.getValue()}`,
+      cell: (info) => `₹${info.getValue()}`,
       enableHiding: true,
     },
     {
       accessorKey: "discount",
       header: "Discount",
-      cell: info => `$${info.getValue()}`,
+      cell: (info) => `₹${info.getValue()}`,
       enableHiding: true,
     },
     {
       accessorKey: "finalAmount",
       header: "Final Amount",
-      cell: info => `$${info.getValue()}`,
+      cell: (info) => `₹${info.getValue()}`,
       enableHiding: true,
     },
     {
       accessorKey: "advance",
       header: "Advance",
-      cell: info => `$${info.getValue()}`,
+      cell: (info) => `₹${info.getValue()}`,
       enableHiding: true,
     },
     {
       accessorKey: "due",
       header: "Due",
-      cell: info => `$${info.getValue()}`,
+      cell: (info) => `₹${info.getValue()}`,
       enableHiding: true,
     },
     {
       accessorKey: "createdAt",
       header: "Created At",
-      cell: info => format(new Date(info.getValue() as Date), "yyyy-MM-dd HH:mm"),
+      cell: (info) => format(new Date(info.getValue() as Date), "yyyy-MM-dd HH:mm"),
       enableHiding: true,
     },
     {
@@ -138,15 +158,11 @@ export function getProjectColumns(
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onView(row.original)}>
-              View
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onEdit(row.original)}>
-              Edit
-            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onView(row.original)}>View</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onEdit(row.original)}>Edit</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       ),
     },
   ];
-} 
+}

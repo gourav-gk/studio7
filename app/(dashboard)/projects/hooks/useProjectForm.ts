@@ -42,6 +42,12 @@ interface DeliverableRow {
   id: string;
   name: string;
   qty: string;
+  isNew?: boolean;
+}
+
+interface PackageData extends Package {
+  packageId: string;
+  deliverables?: Array<{ deliverableId: string; quantity: string }>;
 }
 
 export function useProjectForm() {
@@ -68,7 +74,7 @@ export function useProjectForm() {
   // Data for dropdowns
   const [clients, setClients] = useState<Client[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
-  const [packages, setPackages] = useState<Package[]>([]);
+  const [packages, setPackages] = useState<PackageData[]>([]);
   const [shoots, setShoots] = useState<Shoot[]>([]);
   const [deliverables, setDeliverables] = useState<Deliverable[]>([]);
   const [shootTableData, setShootTableData] = useState<ShootRow[]>([]);
@@ -92,8 +98,6 @@ export function useProjectForm() {
       setEvents(eventsData);
     });
 
-    // Remove the old packages fetch here
-
     const unsubscribeShoots = onSnapshot(collection(firestore, "shoots"), (snapshot) => {
       const shootsData: Shoot[] = snapshot.docs.map((doc) => ({
         shootId: doc.id,
@@ -113,7 +117,6 @@ export function useProjectForm() {
     return () => {
       unsubscribeClients();
       unsubscribeEvents();
-      // No unsubscribePackages here
       unsubscribeShoots();
       unsubscribeDeliverables();
     };
@@ -124,6 +127,7 @@ export function useProjectForm() {
     if (!formData.event) {
       setPackages([]);
       setFormData(prev => ({ ...prev, package: "" }));
+      setShootTableData([]); // Clear shoot table when event changes
       return;
     }
     // Query packages where eventId == formData.event
@@ -134,65 +138,86 @@ export function useProjectForm() {
           packageId: doc.id,
           name: doc.data().name,
           eventId: doc.data().eventId,
+          shoots: doc.data().shoots || [],
+          deliverables: doc.data().deliverables || [],
         }))
         .filter(pkg => pkg.eventId === formData.event);
       setPackages(filteredPackages);
       // If the current selected package is not in the filtered list, clear it
       if (!filteredPackages.some(pkg => pkg.packageId === formData.package)) {
         setFormData(prev => ({ ...prev, package: "" }));
+        setShootTableData([]); // Clear shoot table when package is cleared
       }
     });
     return () => unsubscribe();
   }, [formData.event]);
 
-  // Fetch all shoots for the table on mount
+  // Update shoot table when package changes
   useEffect(() => {
-    const unsubscribeShootsTable = onSnapshot(collection(firestore, "shoots"), (snapshot) => {
-      const shoots = snapshot.docs.map((doc) => {
-        const data = doc.data();
+    async function fetchShootsForPackage() {
+      if (!formData.package) {
+        setShootTableData([]);
+        setFormData(prev => ({
+          ...prev,
+          price: 0
+        }));
+        return;
+      }
+
+      const packageDoc = await getDoc(doc(firestore, "packages", formData.package));
+      if (!packageDoc.exists()) {
+        console.log('No package document found for packageId:', formData.package);
+        return;
+      }
+
+      const packageData = packageDoc.data();
+      const shootIds = packageData.shoots || [];
+
+      // Set the price from package
+      setFormData(prev => ({
+        ...prev,
+        price: packageData.price || 0
+      }));
+
+      // Fetch all shoot documents for the selected package
+      const shootPromises = shootIds.map(async (shootId: string) => {
+        const shootDoc = await getDoc(doc(firestore, "shoots", shootId));
+        if (!shootDoc.exists()) return null;
+        const data = shootDoc.data();
         return {
-          id: doc.id,
-          day: "day1",
-          ritual: data.name || "",
+          id: shootDoc.id,
+          day: data.name || "",
+          ritual: "",
           date: "",
-          traditionalPhotographer: data.traditionalPhotographer || "",
-          traditionalVideographer: data.traditionalVideographer || "",
-          candid: data.candid || "",
-          cinemetographer: data.cinemetographer || "",
-          assistant: data.assistant || "",
-          drone: data.drone || "",
-          other: data.other || "",
+          traditionalPhotographer: data.traditionalPhotographer || "0",
+          traditionalVideographer: data.traditionalVideographer || "0",
+          candid: data.candid || "0",
+          cinemetographer: data.cinemetographer || "0",
+          assistant: data.assistant || "0",
+          drone: data.drone || "0",
+          other: data.other || "0",
         };
       });
-      setShootTableData(shoots);
-    });
-    return () => unsubscribeShootsTable();
-  }, []);
+
+      const shootRows = (await Promise.all(shootPromises)).filter((row): row is ShootRow => row !== null);
+      setShootTableData(shootRows);
+    }
+
+    fetchShootsForPackage();
+  }, [formData.package]);
 
   // Fetch deliverables for selected package
   useEffect(() => {
     async function fetchDeliverablesForPackage() {
-      console.log('Selected packageId:', formData.package);
-      const pkg = packages.find(p => p.packageId === formData.package);
-      console.log('Found package:', pkg);
-      if (formData.package) {
-        // Fetch the entire package document from Firestore by document name (packageId)
-        const packageDoc = await getDoc(doc(firestore, "packages", formData.package));
-        if (packageDoc.exists()) {
-          console.log('Entire package document:', packageDoc.data());
-        } else {
-          console.log('No package document found for packageId:', formData.package);
-        }
-      }
       if (!formData.package) {
         setDeliverablesTableData([]);
         return;
       }
+      const pkg = packages.find(p => p.packageId === formData.package);
       if (!pkg || !pkg.deliverables || !Array.isArray(pkg.deliverables)) {
         setDeliverablesTableData([]);
         return;
       }
-      console.log('Package deliverables array:', pkg.deliverables);
       // For each deliverable, fetch its name from deliverables collection
       const deliverablePromises = pkg.deliverables.map(async (d) => {
         const deliverableDoc = await getDoc(doc(firestore, "deliverables", d.deliverableId));
@@ -201,6 +226,7 @@ export function useProjectForm() {
           id: d.deliverableId,
           name: data.name || "",
           qty: d.quantity || "",
+          isNew: false // Package-loaded deliverables are not new
         };
       });
       const deliverablesRows = await Promise.all(deliverablePromises);
@@ -248,29 +274,43 @@ export function useProjectForm() {
 
   // Handler to add a new row
   const handleAddShootRow = () => {
-    setShootTableData(prev => [
-      ...prev,
-      {
-        id: `new-${Date.now()}`,
-        day: "day1",
-        ritual: "",
-        date: "",
-        traditionalPhotographer: "",
-        traditionalVideographer: "",
-        candid: "",
-        cinemetographer: "",
-        assistant: "",
-        drone: "",
-        other: "",
-      },
-    ]);
+    const newRow: ShootRow = {
+      id: crypto.randomUUID(),
+      day: "",
+      ritual: "",
+      date: "",
+      traditionalPhotographer: "0",
+      traditionalVideographer: "0",
+      candid: "0",
+      cinemetographer: "0",
+      assistant: "0",
+      drone: "0",
+      other: "0"
+    };
+    setShootTableData(prev => [...prev, newRow]);
+  };
+
+  // Handler to remove a row
+  const handleRemoveShootRow = (index: number) => {
+    setShootTableData(prev => prev.filter((_, idx) => idx !== index));
   };
 
   // Handler to update qty in the deliverables table
-  const handleDeliverablesTableChange = (index: number, value: string) => {
+  const handleDeliverablesTableChange = (index: number, field: "name" | "qty", value: string) => {
     setDeliverablesTableData(prev => {
       const updated = [...prev];
-      updated[index] = { ...updated[index], qty: value };
+      if (field === "name") {
+        // Find the deliverable name from the deliverables array
+        const deliverable = deliverables.find(d => d.deliverableId === value);
+        updated[index] = { 
+          ...updated[index], 
+          id: value,
+          name: deliverable?.name || "",
+          isNew: false // Once a deliverable is selected, it's no longer new
+        };
+      } else {
+        updated[index] = { ...updated[index], [field]: value };
+      }
       return updated;
     });
   };
@@ -279,8 +319,13 @@ export function useProjectForm() {
   const handleAddDeliverableRow = () => {
     setDeliverablesTableData(prev => [
       ...prev,
-      { id: `new-${Date.now()}`, name: "", qty: "" },
+      { id: crypto.randomUUID(), name: "", qty: "", isNew: true },
     ]);
+  };
+
+  // Handler to remove a deliverable row
+  const handleRemoveDeliverableRow = (index: number) => {
+    setDeliverablesTableData(prev => prev.filter((_, idx) => idx !== index));
   };
 
   const resetForm = () => {
@@ -310,17 +355,46 @@ export function useProjectForm() {
     try {
       // Validate required fields
       if (!formData.clientName || !formData.projectName || !formData.dates || 
-          !formData.venues || !formData.event || !formData.package || 
-          !formData.shoot || formData.deliverables.length === 0) {
+          !formData.venues || !formData.event) {
         toast.error("Please fill in all required fields");
         return;
       }
 
-      // Convert date to string for Firestore
+      // Prepare project data
       const projectData = {
-        ...formData,
+        clientName: formData.clientName,
+        projectName: formData.projectName,
         dates: formData.dates ? formData.dates.toISOString() : "",
+        venues: formData.venues,
+        event: formData.event,
+        package: formData.package || null,
+        price: formData.price,
+        extraExpenses: formData.extraExpenses,
+        discount: formData.discount,
+        finalAmount: formData.finalAmount,
+        advance: formData.advance,
+        due: formData.due,
+        note: formData.note,
         createdAt: serverTimestamp(),
+        // Add shoot and deliverable data
+        shoots: shootTableData.map(shoot => ({
+          id: shoot.id,
+          day: shoot.day,
+          ritual: shoot.ritual,
+          date: shoot.date,
+          traditionalPhotographer: shoot.traditionalPhotographer,
+          traditionalVideographer: shoot.traditionalVideographer,
+          candid: shoot.candid,
+          cinemetographer: shoot.cinemetographer,
+          assistant: shoot.assistant,
+          drone: shoot.drone,
+          other: shoot.other
+        })),
+        deliverables: deliverablesTableData.map(deliverable => ({
+          id: deliverable.id,
+          name: deliverable.name,
+          qty: deliverable.qty
+        }))
       };
 
       await addDoc(collection(firestore, "projects"), projectData);
@@ -348,11 +422,16 @@ export function useProjectForm() {
     deliverablesTableData,
     handleShootTableChange,
     handleAddShootRow,
+    handleRemoveShootRow,
     handleInputChange,
     handleDeliverableChange,
     handleDeliverablesTableChange,
     handleAddDeliverableRow,
+    handleRemoveDeliverableRow,
     handleSubmit,
     resetForm,
+    setFormData,
+    setShootTableData,
+    setDeliverablesTableData,
   };
 } 

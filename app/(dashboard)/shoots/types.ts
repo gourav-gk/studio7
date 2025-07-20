@@ -3,8 +3,20 @@ export interface Shoot {
   name: string;
   traditionalPhotographer: string;
   traditionalVideographer: string;
-  camId: string;
+  candid: string;
   cinemetographer: string;
   assistant: string;
+  drone: string;
   other: string;
 }
+
+export const shootInitialState = {
+  name: "",
+  traditionalPhotographer: "0",
+  traditionalVideographer: "0",
+  candid: "0",
+  cinemetographer: "0",
+  assistant: "0",
+  drone: "0",
+  other: "0",
+};

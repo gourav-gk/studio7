@@ -14,31 +14,34 @@ import {
   VisibilityState,
 } from "@tanstack/react-table";
 import { getProjectColumns } from "./columns";
-import AddProjectModal from "./AddProjectModal";
 import ViewProjectModal from "./ViewProjectModal";
 import { GenericTable } from "@/components/shared/GenericTable";
 import { useProjectsView } from "../hooks/useProjectsView";
 import { ProjectsTable } from "../components/ProjectsTable";
+import { useRouter } from "next/navigation";
+import { Project } from "./types";
 
 export default function ProjectsView() {
+  const router = useRouter();
   const {
     isLoading,
     data,
-    deliverables,
-    open,
     viewOpen,
     selectedProject,
-    handleEdit,
-    handleClose,
     handleView,
     handleViewClose,
     handleBulkDelete,
   } = useProjectsView();
 
+  // Edit handler: redirect to add page with ?edit=projectId
+  const handleEdit = (project: Project) => {
+    router.push(`/projects/add?edit=${project.projectId}`);
+  };
+
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
-    select: true, // Always show the select column
+    select: true,
     price: false,
     extraExpenses: false,
     discount: false,
@@ -49,7 +52,7 @@ export default function ProjectsView() {
   });
   const [rowSelection, setRowSelection] = useState({});
 
-  const columns = useMemo(() => getProjectColumns(handleEdit, handleView, deliverables), [handleEdit, handleView, deliverables]);
+  const columns = useMemo(() => getProjectColumns(handleEdit, handleView), [handleView]);
 
   const table = useReactTable({
     data,
@@ -92,8 +95,7 @@ export default function ProjectsView() {
         </>
       )}
       
-      <AddProjectModal project={selectedProject} open={open} onOpenChange={handleClose} />
-      <ViewProjectModal project={selectedProject} open={viewOpen} onOpenChange={handleViewClose} deliverables={deliverables} />
+      <ViewProjectModal project={selectedProject} open={viewOpen} onOpenChange={handleViewClose} />
     </div>
   );
 } 

@@ -6,8 +6,27 @@ export interface Project {
   venues: string;
   event: string;
   package: string;
-  shoot: string;
-  deliverables: string[];
+  shoot?: string;
+  shoots?: {
+    id: string;
+    day: string;
+    ritual: string;
+    date: string;
+    traditionalPhotographer: string;
+    traditionalVideographer: string;
+    candid: string;
+    cinemetographer: string;
+    assistant: string;
+    drone: string;
+    other: string;
+  }[];
+  deliverables:
+    | string[]
+    | {
+        id: string;
+        name: string;
+        qty: string;
+      }[];
   price: number;
   extraExpenses: number;
   discount: number;
@@ -42,4 +61,4 @@ export interface Shoot {
 export interface Deliverable {
   deliverableId: string;
   name: string;
-} 
+}

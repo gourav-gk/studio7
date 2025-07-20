@@ -52,6 +52,7 @@ export function useProjectsView() {
           venues: data.venues,
           event: data.event,
           package: data.package,
+          shoots: data.shoots || [],
           shoot: data.shoot,
           deliverables: data.deliverables || [],
           price: data.price || 0,

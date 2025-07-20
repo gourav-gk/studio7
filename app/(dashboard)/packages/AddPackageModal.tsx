@@ -15,7 +15,7 @@ import { MultiSelect } from "@/components/shared/MultiSelect";
 import { Package, DeliverableWithQuantity } from "./types";
 import { collection, onSnapshot } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
-import { Shoot } from "../shoots/types";
+import { Shoot, shootInitialState } from "../shoots/types";
 import { Deliverable } from "../deliverables/types";
 import {
   Table,
@@ -124,6 +124,7 @@ function AddPackageModal({ initialData, open, onClose, onSave }: Props) {
       eventId: formData.eventId,
       shoots: formData.shoots,
       deliverables: formData.deliverables,
+      createdAt: initialData?.createdAt || new Date(),
     } as Package);
   };
 
@@ -153,39 +154,43 @@ function AddPackageModal({ initialData, open, onClose, onSave }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px] md:max-w-[700px] lg:max-w-[800px]">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[800px] md:max-w-[1000px] lg:max-w-[1200px]">
         <DialogHeader>
           <DialogTitle>{initialData ? "Edit Package" : "Add Package"}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Event</label>
-            <Select
-              value={formData.eventId}
-              onValueChange={(value: string) =>
-                setFormData((prev) => ({ ...prev, eventId: value }))
-              }
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select an event" />
-              </SelectTrigger>
-              <SelectContent>
-                {events.map((event) => (
-                  <SelectItem key={event.eventId} value={event.eventId}>
-                    {event.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Event</label>
+              <Select
+                value={formData.eventId}
+                onValueChange={(value: string) =>
+                  setFormData((prev) => ({ ...prev, eventId: value }))
+                }
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select an event" />
+                </SelectTrigger>
+                <SelectContent>
+                  {events.map((event) => (
+                    <SelectItem key={event.eventId} value={event.eventId}>
+                      {event.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Package Name</label>
+              <Input
+                placeholder="Package Name"
+                value={formData.name}
+                onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+              />
+            </div>
           </div>
           <div className="space-y-2">
-            <Input
-              placeholder="Package Name"
-              value={formData.name}
-              onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-            />
-          </div>
-          <div className="space-y-2">
+            <label className="text-sm font-medium">Price</label>
             <Input
               type="number"
               placeholder="Price"
@@ -194,6 +199,7 @@ function AddPackageModal({ initialData, open, onClose, onSave }: Props) {
             />
           </div>
           <div className="space-y-2">
+            <label className="text-sm font-medium">Shoots</label>
             <MultiSelect
               options={shootOptions}
               selected={formData.shoots}
@@ -202,45 +208,44 @@ function AddPackageModal({ initialData, open, onClose, onSave }: Props) {
               searchPlaceholder="Search available shoots..."
             />
             {formData.shoots.length > 0 && (
-              <div className="mt-2 rounded-md border overflow-hidden">
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[150px]">Shoot Name</TableHead>
-                        <TableHead className="w-[120px]">Photographer</TableHead>
-                        <TableHead className="w-[120px]">Videographer</TableHead>
-                        <TableHead className="w-[120px]">Cinematographer</TableHead>
-                        <TableHead className="w-[100px]">Assistant</TableHead>
-                        <TableHead className="w-[100px]">Other</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {formData.shoots.map((shootId) => {
-                        const shoot = shootOptions.find((opt) => opt.value === shootId)?.data;
-                        if (!shoot) return null;
-                        return (
-                          <TableRow key={shootId}>
-                            <TableCell className="font-medium truncate">{shoot.name}</TableCell>
-                            <TableCell className="truncate">
-                              {shoot.traditionalPhotographer}
-                            </TableCell>
-                            <TableCell className="truncate">
-                              {shoot.traditionalVideographer}
-                            </TableCell>
-                            <TableCell className="truncate">{shoot.cinemetographer}</TableCell>
-                            <TableCell className="truncate">{shoot.assistant}</TableCell>
-                            <TableCell className="truncate">{shoot.other ?? 0}</TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
+              <div className="mt-2 rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[200px]">Shoot Name</TableHead>
+                      {Object.keys(shootInitialState)
+                        .filter((key) => key !== "name")
+                        .map((key) => (
+                          <TableHead key={key} className="w-[100px] text-center">
+                            {key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, " $1")}
+                          </TableHead>
+                        ))}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {formData.shoots.map((shootId) => {
+                      const shoot = shootOptions.find((opt) => opt.value === shootId)?.data;
+                      if (!shoot) return null;
+                      return (
+                        <TableRow key={shootId}>
+                          <TableCell className="font-medium">{shoot.name}</TableCell>
+                          {Object.keys(shootInitialState)
+                            .filter((key) => key !== "name")
+                            .map((key) => (
+                              <TableCell key={key} className="text-center">
+                                {shoot[key as keyof Shoot] ?? "0"}
+                              </TableCell>
+                            ))}
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
               </div>
             )}
           </div>
           <div className="space-y-2">
+            <label className="text-sm font-medium">Deliverables</label>
             <MultiSelect
               options={deliverableOptions}
               selected={formData.deliverables.map((d) => d.deliverableId)}
@@ -264,7 +269,7 @@ function AddPackageModal({ initialData, open, onClose, onSave }: Props) {
                       );
                       return (
                         <TableRow key={deliverable.deliverableId}>
-                          <TableCell className="truncate">{option?.label}</TableCell>
+                          <TableCell>{option?.label}</TableCell>
                           <TableCell className="text-right">
                             <Input
                               type="text"
@@ -294,4 +299,5 @@ function AddPackageModal({ initialData, open, onClose, onSave }: Props) {
     </Dialog>
   );
 }
+
 export default AddPackageModal;

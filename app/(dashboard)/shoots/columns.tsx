@@ -46,7 +46,7 @@ export function getShootColumns(onEdit: (shoot: Shoot) => void): ColumnDef<Shoot
       header: "Traditional Videographer",
       cell: (info) => info.getValue(),
     },
-    { accessorKey: "camId", header: "Cam ID", cell: (info) => info.getValue() },
+    { accessorKey: "candid", header: "Candid", cell: (info) => info.getValue() },
     { accessorKey: "cinemetographer", header: "Cinemetographer", cell: (info) => info.getValue() },
     { accessorKey: "assistant", header: "Assistant", cell: (info) => info.getValue() },
     { accessorKey: "other", header: "Other", cell: (info) => info.getValue() },

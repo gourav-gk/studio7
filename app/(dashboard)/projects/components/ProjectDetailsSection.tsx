@@ -18,20 +18,20 @@ export function ProjectDetailsSection({
   formData,
   events,
   packages,
-  // shoots, // Remove shoots
   onInputChange,
 }: ProjectDetailsSectionProps) {
-  const eventOptions = events.map(event => ({
-    id: event.eventId,
-    name: event.name,
-  }));
+  const eventOptions = [
+    ...events.map(event => ({
+      id: event.eventId,
+      name: event.name,
+    })),
+    { id: "other", name: "Other" }
+  ];
 
   const packageOptions = packages.map(pkg => ({
-    id: pkg.packageId, // use packageId as value
+    id: pkg.packageId,
     name: pkg.name,
   }));
-
-  // Remove shootOptions
 
   return (
     <div className="bg-white rounded-lg border p-4">
@@ -54,10 +54,7 @@ export function ProjectDetailsSection({
           onChange={(value) => onInputChange("package", value)}
           placeholder="Select package"
           options={packageOptions}
-          required
         />
-
-        {/* Remove Shoot dropdown */}
       </div>
     </div>
   );
