@@ -71,7 +71,21 @@ export default function AddProject() {
             due: data.due || 0,
             note: data.note || "",
           });
-          setShootTableData(data.shoots || []);
+          setShootTableData(
+            (data.shoots || []).map(shoot => ({
+              id: shoot.id || "",
+              day: shoot.day || "",
+              ritual: shoot.ritual || "",
+              date: shoot.date || "",
+              traditionalPhotographer: shoot.traditionalPhotographer || "",
+              traditionalVideographer: shoot.traditionalVideographer || "",
+              candid: shoot.candid || "",
+              cinemetographer: shoot.cinemetographer || "",
+              assistant: shoot.assistant || "",
+              drone: shoot.drone || "",
+              other: shoot.other || "",
+            }))
+          );
           setDeliverablesTableData(
             Array.isArray(data.deliverables) && typeof data.deliverables[0] === "object"
               ? (data.deliverables as { id: string; name: string; qty: string }[])

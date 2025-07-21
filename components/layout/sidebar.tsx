@@ -52,6 +52,8 @@ const data = {
       icon: BookOpen,
       items: [
         { title: "Add Project", url: "/projects/add" },
+        { title: "Project Shoots", url: "/projects/shoots" },
+        { title: "Project Deliverables", url: "/projects/deliverables" },
       ],
     },
     {

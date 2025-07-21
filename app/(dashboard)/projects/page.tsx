@@ -94,8 +94,8 @@ export default function ProjectsView() {
           <Pagination table={table} />
         </>
       )}
-      
+
       <ViewProjectModal project={selectedProject} open={viewOpen} onOpenChange={handleViewClose} />
     </div>
   );
-} 
+}
