@@ -62,7 +62,7 @@ const data = {
       icon: Users,
       items: [
         { title: "View", url: "/employee/view" },
-        { title: "Employee Task", url: "/employee/task" },
+        { title: "Employee Task", url: "/employee/employee-task" },
         { title: "Attendance", url: "/employee/attendance" },
         { title: "Salary", url: "/employee/salary" },
       ],
