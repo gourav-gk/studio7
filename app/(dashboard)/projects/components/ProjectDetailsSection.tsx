@@ -1,6 +1,6 @@
 import React from "react";
 import { FormField } from "./FormField";
-import { Event, Package, Shoot } from "../view/types";
+import { Event, Package} from "../types";
 
 interface ProjectDetailsSectionProps {
   formData: {

@@ -38,7 +38,7 @@ function Topbar() {
                   {index === segments.length - 1 ? (
                     <BreadcrumbPage>{segment}</BreadcrumbPage>
                   ) : (
-                    <BreadcrumbLink href="#">{segment}</BreadcrumbLink>
+                    <BreadcrumbLink href={`/${segment.toLowerCase()}`}>{segment}</BreadcrumbLink>
                   )}
                 </BreadcrumbItem>
               </React.Fragment>

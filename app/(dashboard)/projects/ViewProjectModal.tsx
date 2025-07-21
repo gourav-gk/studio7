@@ -20,10 +20,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { collection, onSnapshot } from "firebase/firestore";
-import { firestore } from "@/lib/firebase";
-import { Event } from "@/app/(dashboard)/events/types";
-import { Package } from "@/app/(dashboard)/packages/types";
 
 interface ViewProjectModalProps {
   project?: Project | null;
@@ -32,35 +28,7 @@ interface ViewProjectModalProps {
 }
 
 function ViewProjectModal({ project, open, onOpenChange }: ViewProjectModalProps) {
-  const [eventDetails, setEventDetails] = React.useState<Record<string, Event>>({});
-  const [packageDetails, setPackageDetails] = React.useState<Record<string, Package>>({});
-
-  React.useEffect(() => {
-    const unsubscribe = onSnapshot(collection(firestore, "events"), (snapshot) => {
-      const events = snapshot.docs.reduce((acc, doc) => {
-        acc[doc.id] = { ...doc.data(), eventId: doc.id } as Event;
-        return acc;
-      }, {} as Record<string, Event>);
-      setEventDetails(events);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  React.useEffect(() => {
-    const unsubscribe = onSnapshot(collection(firestore, "packages"), (snapshot) => {
-      const pkgs = snapshot.docs.reduce((acc, doc) => {
-        acc[doc.id] = { ...doc.data(), id: doc.id } as Package;
-        return acc;
-      }, {} as Record<string, Package>);
-      setPackageDetails(pkgs);
-    });
-    return () => unsubscribe();
-  }, []);
-
   if (!project) return null;
-
-  const event = eventDetails[project.event];
-  const packageName = packageDetails[project.package]?.name || project.package;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -102,11 +70,11 @@ function ViewProjectModal({ project, open, onOpenChange }: ViewProjectModalProps
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label className="text-sm font-medium text-gray-600">Event</Label>
-                <p className="text-gray-900">{event?.name || project.event}</p>
+                <p className="text-gray-900">{project.event}</p>
               </div>
               <div>
                 <Label className="text-sm font-medium text-gray-600">Package</Label>
-                <p className="text-gray-900">{packageName}</p>
+                <p className="text-gray-900">{project.package}</p>
               </div>
             </div>
           </div>

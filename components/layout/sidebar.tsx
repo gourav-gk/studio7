@@ -48,11 +48,10 @@ const data = {
     },
     {
       title: "Projects",
-      url: "#",
+      url: "/projects",
       icon: BookOpen,
       items: [
         { title: "Add Project", url: "/projects/add" },
-        { title: "View Projects", url: "/projects/view" },
       ],
     },
     {

@@ -3,7 +3,7 @@ import { useRouter } from "next/navigation";
 import { collection, addDoc, serverTimestamp, onSnapshot, getDoc, doc } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
 import { toast } from "sonner";
-import { Client, Event, Package, Shoot, Deliverable } from "../view/types";
+import { Client, Event, Package, Shoot, Deliverable } from "../app/(dashboard)/projects/types";
 
 interface ProjectFormData {
   clientName: string;
@@ -106,13 +106,16 @@ export function useProjectForm() {
       setShoots(shootsData);
     });
 
-    const unsubscribeDeliverables = onSnapshot(collection(firestore, "deliverables"), (snapshot) => {
-      const deliverablesData: Deliverable[] = snapshot.docs.map((doc) => ({
-        deliverableId: doc.id,
-        name: doc.data().name,
-      }));
-      setDeliverables(deliverablesData);
-    });
+    const unsubscribeDeliverables = onSnapshot(
+      collection(firestore, "deliverables"),
+      (snapshot) => {
+        const deliverablesData: Deliverable[] = snapshot.docs.map((doc) => ({
+          deliverableId: doc.id,
+          name: doc.data().name,
+        }));
+        setDeliverables(deliverablesData);
+      }
+    );
 
     return () => {
       unsubscribeClients();
@@ -126,7 +129,7 @@ export function useProjectForm() {
   useEffect(() => {
     if (!formData.event) {
       setPackages([]);
-      setFormData(prev => ({ ...prev, package: "" }));
+      setFormData((prev) => ({ ...prev, package: "" }));
       setShootTableData([]); // Clear shoot table when event changes
       return;
     }
@@ -141,11 +144,11 @@ export function useProjectForm() {
           shoots: doc.data().shoots || [],
           deliverables: doc.data().deliverables || [],
         }))
-        .filter(pkg => pkg.eventId === formData.event);
+        .filter((pkg) => pkg.eventId === formData.event);
       setPackages(filteredPackages);
       // If the current selected package is not in the filtered list, clear it
-      if (!filteredPackages.some(pkg => pkg.packageId === formData.package)) {
-        setFormData(prev => ({ ...prev, package: "" }));
+      if (!filteredPackages.some((pkg) => pkg.packageId === formData.package)) {
+        setFormData((prev) => ({ ...prev, package: "" }));
         setShootTableData([]); // Clear shoot table when package is cleared
       }
     });
@@ -157,16 +160,16 @@ export function useProjectForm() {
     async function fetchShootsForPackage() {
       if (!formData.package) {
         setShootTableData([]);
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
-          price: 0
+          price: 0,
         }));
         return;
       }
 
       const packageDoc = await getDoc(doc(firestore, "packages", formData.package));
       if (!packageDoc.exists()) {
-        console.log('No package document found for packageId:', formData.package);
+        console.log("No package document found for packageId:", formData.package);
         return;
       }
 
@@ -174,9 +177,9 @@ export function useProjectForm() {
       const shootIds = packageData.shoots || [];
 
       // Set the price from package
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        price: packageData.price || 0
+        price: packageData.price || 0,
       }));
 
       // Fetch all shoot documents for the selected package
@@ -199,7 +202,9 @@ export function useProjectForm() {
         };
       });
 
-      const shootRows = (await Promise.all(shootPromises)).filter((row): row is ShootRow => row !== null);
+      const shootRows = (await Promise.all(shootPromises)).filter(
+        (row): row is ShootRow => row !== null
+      );
       setShootTableData(shootRows);
     }
 
@@ -213,7 +218,7 @@ export function useProjectForm() {
         setDeliverablesTableData([]);
         return;
       }
-      const pkg = packages.find(p => p.packageId === formData.package);
+      const pkg = packages.find((p) => p.packageId === formData.package);
       if (!pkg || !pkg.deliverables || !Array.isArray(pkg.deliverables)) {
         setDeliverablesTableData([]);
         return;
@@ -226,7 +231,7 @@ export function useProjectForm() {
           id: d.deliverableId,
           name: data.name || "",
           qty: d.quantity || "",
-          isNew: false // Package-loaded deliverables are not new
+          isNew: false, // Package-loaded deliverables are not new
         };
       });
       const deliverablesRows = await Promise.all(deliverablePromises);
@@ -239,8 +244,8 @@ export function useProjectForm() {
   useEffect(() => {
     const finalAmount = formData.price + formData.extraExpenses - formData.discount;
     const due = finalAmount - formData.advance;
-    
-    setFormData(prev => ({
+
+    setFormData((prev) => ({
       ...prev,
       finalAmount,
       due,
@@ -248,24 +253,24 @@ export function useProjectForm() {
   }, [formData.price, formData.extraExpenses, formData.discount, formData.advance]);
 
   const handleInputChange = (field: string, value: string | number | Date | undefined) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
   };
 
   const handleDeliverableChange = (deliverableId: string, checked: boolean) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       deliverables: checked
         ? [...prev.deliverables, deliverableId]
-        : prev.deliverables.filter(id => id !== deliverableId),
+        : prev.deliverables.filter((id) => id !== deliverableId),
     }));
   };
 
   // Handler to update a cell in the shoot table
   const handleShootTableChange = (index: number, field: keyof ShootRow, value: string) => {
-    setShootTableData(prev => {
+    setShootTableData((prev) => {
       const updated = [...prev];
       updated[index] = { ...updated[index], [field]: value };
       return updated;
@@ -285,28 +290,28 @@ export function useProjectForm() {
       cinemetographer: "0",
       assistant: "0",
       drone: "0",
-      other: "0"
+      other: "0",
     };
-    setShootTableData(prev => [...prev, newRow]);
+    setShootTableData((prev) => [...prev, newRow]);
   };
 
   // Handler to remove a row
   const handleRemoveShootRow = (index: number) => {
-    setShootTableData(prev => prev.filter((_, idx) => idx !== index));
+    setShootTableData((prev) => prev.filter((_, idx) => idx !== index));
   };
 
   // Handler to update qty in the deliverables table
   const handleDeliverablesTableChange = (index: number, field: "name" | "qty", value: string) => {
-    setDeliverablesTableData(prev => {
+    setDeliverablesTableData((prev) => {
       const updated = [...prev];
       if (field === "name") {
         // Find the deliverable name from the deliverables array
-        const deliverable = deliverables.find(d => d.deliverableId === value);
-        updated[index] = { 
-          ...updated[index], 
+        const deliverable = deliverables.find((d) => d.deliverableId === value);
+        updated[index] = {
+          ...updated[index],
           id: value,
           name: deliverable?.name || "",
-          isNew: false // Once a deliverable is selected, it's no longer new
+          isNew: false, // Once a deliverable is selected, it's no longer new
         };
       } else {
         updated[index] = { ...updated[index], [field]: value };
@@ -314,18 +319,26 @@ export function useProjectForm() {
       return updated;
     });
   };
+  // Function to generate a unique ID for new rows
+  function generateUUID() {
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+      const r = (Math.random() * 16) | 0,
+        v = c === "x" ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
+  }
 
   // Handler to add a new row
   const handleAddDeliverableRow = () => {
-    setDeliverablesTableData(prev => [
+    setDeliverablesTableData((prev) => [
       ...prev,
-      { id: crypto.randomUUID(), name: "", qty: "", isNew: true },
+      { id: generateUUID(), name: "", qty: "", isNew: true },
     ]);
   };
 
   // Handler to remove a deliverable row
   const handleRemoveDeliverableRow = (index: number) => {
-    setDeliverablesTableData(prev => prev.filter((_, idx) => idx !== index));
+    setDeliverablesTableData((prev) => prev.filter((_, idx) => idx !== index));
   };
 
   const resetForm = () => {
@@ -354,8 +367,13 @@ export function useProjectForm() {
 
     try {
       // Validate required fields
-      if (!formData.clientName || !formData.projectName || !formData.dates || 
-          !formData.venues || !formData.event) {
+      if (
+        !formData.clientName ||
+        !formData.projectName ||
+        !formData.dates ||
+        !formData.venues ||
+        !formData.event
+      ) {
         toast.error("Please fill in all required fields");
         return;
       }
@@ -377,7 +395,7 @@ export function useProjectForm() {
         note: formData.note,
         createdAt: serverTimestamp(),
         // Add shoot and deliverable data
-        shoots: shootTableData.map(shoot => ({
+        shoots: shootTableData.map((shoot) => ({
           id: shoot.id,
           day: shoot.day,
           ritual: shoot.ritual,
@@ -388,20 +406,20 @@ export function useProjectForm() {
           cinemetographer: shoot.cinemetographer,
           assistant: shoot.assistant,
           drone: shoot.drone,
-          other: shoot.other
+          other: shoot.other,
         })),
-        deliverables: deliverablesTableData.map(deliverable => ({
+        deliverables: deliverablesTableData.map((deliverable) => ({
           id: deliverable.id,
           name: deliverable.name,
-          qty: deliverable.qty
-        }))
+          qty: deliverable.qty,
+        })),
       };
 
       await addDoc(collection(firestore, "projects"), projectData);
 
       toast.success("Project created successfully!");
       resetForm();
-      router.push("/projects/view");
+      router.push("/projects");
     } catch (error) {
       console.error("Error creating project:", error);
       toast.error("Failed to create project");
@@ -434,4 +452,4 @@ export function useProjectForm() {
     setShootTableData,
     setDeliverablesTableData,
   };
-} 
+}

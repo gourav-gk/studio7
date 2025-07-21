@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { collection, deleteDoc, doc, onSnapshot, Timestamp } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
 import { toast } from "sonner";
-import { Project, Deliverable } from "../view/types";
+import { Project, Deliverable, Client } from "../app/(dashboard)/projects/types";
+import { Package } from "../app/(dashboard)/packages/types";
 
 export function useProjectsView() {
   const [isLoading, setIsLoading] = useState(true);
@@ -11,6 +12,8 @@ export function useProjectsView() {
   const [open, setOpen] = useState(false);
   const [viewOpen, setViewOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [packages, setPackages] = useState<Package[]>([]);
 
   // Fetch deliverables for mapping
   useEffect(() => {
@@ -22,6 +25,35 @@ export function useProjectsView() {
       setDeliverables(deliverablesData);
     });
     return () => unsubscribeDeliverables();
+  }, []);
+
+  // Fetch clients
+  useEffect(() => {
+    const unsubscribeClients = onSnapshot(collection(firestore, "clients"), (snapshot) => {
+      const clientsData: Client[] = snapshot.docs.map((doc) => ({
+        clientId: doc.id,
+        name: doc.data().name,
+      }));
+      setClients(clientsData);
+    });
+    return () => unsubscribeClients();
+  }, []);
+
+  // Fetch packages
+  useEffect(() => {
+    const unsubscribePackages = onSnapshot(collection(firestore, "packages"), (snapshot) => {
+      const packagesData: Package[] = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        name: doc.data().name,
+        price: doc.data().price,
+        eventId: doc.data().eventId,
+        shoots: doc.data().shoots || [],
+        deliverables: doc.data().deliverables || [],
+        createdAt: doc.data().createdAt,
+      }));
+      setPackages(packagesData);
+    });
+    return () => unsubscribePackages();
   }, []);
 
   // Fetch projects
@@ -44,14 +76,24 @@ export function useProjectsView() {
           createdAt = new Date();
         }
 
+        // Map clientName and package to their names
+        let clientName = data.clientName;
+        let packageName = data.package;
+        // If clientName is an ID, resolve to name
+        const clientObj = clients.find((c) => c.clientId === data.clientName);
+        if (clientObj) clientName = clientObj.name;
+        // If package is an ID, resolve to name
+        const packageObj = packages.find((p) => p.id === data.package);
+        if (packageObj) packageName = packageObj.name;
+
         return {
           projectId: doc.id,
-          clientName: data.clientName,
+          clientName,
           projectName: data.projectName,
           dates: data.dates,
           venues: data.venues,
           event: data.event,
-          package: data.package,
+          package: packageName,
           shoots: data.shoots || [],
           shoot: data.shoot,
           deliverables: data.deliverables || [],
@@ -69,7 +111,7 @@ export function useProjectsView() {
       setIsLoading(false);
     });
     return () => unsubscribe();
-  }, []);
+  }, [clients, packages]);
 
   const handleEdit = useCallback((project: Project) => {
     setSelectedProject(project);

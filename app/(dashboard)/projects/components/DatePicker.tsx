@@ -16,7 +16,6 @@ export function DatePicker({
   required = false,
   value,
   onChange,
-  placeholder = "Select date",
   disabled = false,
 }: DatePickerProps) {
   // Convert Date to YYYY-MM-DD format for input

@@ -1,7 +1,7 @@
 import React from "react";
 import { FormField } from "./FormField";
 import { DatePicker } from "./DatePicker";
-import { Client } from "../view/types";
+import { Client } from "../types";
 
 interface BasicInformationSectionProps {
   formData: {

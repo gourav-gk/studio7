@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { useProjectForm } from "../hooks/useProjectForm";
+import { useProjectForm } from "../../../../hooks/useProjectForm";
 import { BasicInformationSection } from "../components/BasicInformationSection";
 import { ProjectDetailsSection } from "../components/ProjectDetailsSection";
 import { FinancialSection } from "../components/FinancialSection";
@@ -14,7 +14,7 @@ import { useEffect, useState } from "react";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
 import { toast } from "sonner";
-import { Project } from "../view/types";
+import { Project } from "../types";
 
 export default function AddProject() {
   const searchParams = useSearchParams();

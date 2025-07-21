@@ -1,7 +1,7 @@
 import React from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Deliverable } from "../view/types";
+import { Deliverable } from "../types";
 
 interface DeliverablesSectionProps {
   deliverables: Deliverable[];

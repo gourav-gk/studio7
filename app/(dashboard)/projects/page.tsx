@@ -16,8 +16,8 @@ import {
 import { getProjectColumns } from "./columns";
 import ViewProjectModal from "./ViewProjectModal";
 import { GenericTable } from "@/components/shared/GenericTable";
-import { useProjectsView } from "../hooks/useProjectsView";
-import { ProjectsTable } from "../components/ProjectsTable";
+import { useProjectsView } from "../../../hooks/useProjectsView";
+import { ProjectsTable } from "./components/ProjectsTable";
 import { useRouter } from "next/navigation";
 import { Project } from "./types";
 

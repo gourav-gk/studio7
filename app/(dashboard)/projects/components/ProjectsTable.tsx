@@ -12,7 +12,7 @@ import {
 import { ChevronDown, MoreHorizontal, Plus } from "lucide-react";
 import { CSVLink } from "react-csv";
 import { Table } from "@tanstack/react-table";
-import { Project } from "../view/types";
+import { Project } from "../types";
 
 interface ProjectsTableProps {
   table: Table<Project>;
@@ -25,8 +25,6 @@ interface ProjectsTableProps {
 export function ProjectsTable({
   table,
   data,
-  onEdit,
-  onView,
   onBulkDelete,
 }: ProjectsTableProps) {
   const router = useRouter();
