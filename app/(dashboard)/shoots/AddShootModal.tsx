@@ -28,14 +28,14 @@ function AddShootModal({ shoot, open, onOpenChange }: AddShootModalProps) {
   useEffect(() => {
     if (shoot) {
       setForm({
-        name: shoot.name,
-        traditionalPhotographer: shoot.traditionalPhotographer,
-        traditionalVideographer: shoot.traditionalVideographer,
-        candid: shoot.candid,
-        cinemetographer: shoot.cinemetographer,
-        assistant: shoot.assistant,
-        drone: shoot.drone,
-        other: shoot.other,
+        name: shoot.name ?? "",
+        traditionalPhotographer: shoot.traditionalPhotographer ?? "0",
+        traditionalVideographer: shoot.traditionalVideographer ?? "0",
+        candid: shoot.candid ?? "0",
+        cinemetographer: shoot.cinemetographer ?? "0",
+        assistant: shoot.assistant ?? "0",
+        drone: shoot.drone ?? "0",
+        other: shoot.other ?? "0",
       });
     } else {
       setForm(shootInitialState);

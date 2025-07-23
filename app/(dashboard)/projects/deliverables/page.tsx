@@ -7,14 +7,13 @@ import { GenericTable } from "@/components/shared/GenericTable";
 import TableSkeleton from "@/components/shared/skeletons/TableSkeleton";
 import Pagination from "@/components/shared/Pagination";
 import { useReactTable, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, SortingState, ColumnFiltersState, VisibilityState } from "@tanstack/react-table";
-import { collection, doc, onSnapshot, updateDoc, setDoc, getDocs, getDoc, doc as firestoreDoc } from "firebase/firestore";
+import { collection, doc, onSnapshot, updateDoc, setDoc, getDoc } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
 import { Employee } from "@/app/(dashboard)/employee/view/types";
 import { MultiSelect, Option } from "@/components/shared/MultiSelect";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { format } from "date-fns";
 
 function ProjectDeliverables() {
   const { isLoading, data } = useProjectsView();
@@ -68,12 +67,12 @@ function ProjectDeliverables() {
   const allDeliverables: DeliverableRow[] = useMemo(() =>
     data.flatMap(project =>
       Array.isArray(project.deliverables)
-        ? (project.deliverables as any[]).map((d, idx) => ({
+        ? (project.deliverables as DeliverableRow[]).map((d: DeliverableRow, idx: number) => ({
             id: d.id || `${project.projectId}-${idx}`,
             name: d.name || String(d),
             qty: d.qty || "",
             projectName: project.projectName,
-            assignedEmployees: d.assignedEmployees || [],
+            assignedEmployees: Array.isArray(d.assignedEmployees) ? d.assignedEmployees : [],
             _projectId: project.projectId, // for update reference
             createdAt: d.createdAt || "",
             completeDate: d.completeDate || "",
@@ -99,7 +98,7 @@ function ProjectDeliverables() {
   const handleAssignEmployee = useCallback((deliverable: DeliverableRow) => {
     setSelectedDeliverable(deliverable);
     setSelectedEmployeeIds(deliverable.assignedEmployees || []);
-    setSelectedDeliverableProjectId((deliverable as any)._projectId || null);
+    setSelectedDeliverableProjectId((deliverable as DeliverableRow)._projectId || null);
     setAssignedDate("");
     setDeliveryDate("");
     setAssignModalOpen(true);
@@ -111,11 +110,10 @@ function ProjectDeliverables() {
     try {
       // Find the project and update the deliverable's assignedEmployees and task info
       const projectDocRef = doc(firestore, "projects", selectedDeliverableProjectId);
-      // Find the project in data
       const project = data.find(p => p.projectId === selectedDeliverableProjectId);
       if (!project) throw new Error("Project not found");
       const now = new Date().toISOString();
-      const updatedDeliverables = (project.deliverables as any[]).map(d =>
+      const updatedDeliverables = (project.deliverables as DeliverableRow[]).map(d =>
         d.id === selectedDeliverable.id
           ? {
               ...d,
@@ -127,31 +125,52 @@ function ProjectDeliverables() {
           : d
       );
       await updateDoc(projectDocRef, { deliverables: updatedDeliverables });
-      // --- New: Create task in Firestore ---
+
+      // --- Use single 'employee' document in 'task' collection, robust date handling ---
       if (selectedEmployeeIds.length > 0 && assignedDate && deliveryDate) {
-        const today = format(new Date(), "yyyyMMdd");
-        const taskDocRef = firestoreDoc(firestore, "task", today);
-        // Fetch existing tasks
-        let existingTasks = [];
-        const docSnap = await getDoc(taskDocRef);
+        const start = new Date(assignedDate);
+        const end = new Date(deliveryDate);
+        const employeeTaskDocRef = doc(firestore, "task", "employee");
+        const docSnap = await getDoc(employeeTaskDocRef);
+        let employeeTasks = {};
         if (docSnap.exists()) {
-          const data = docSnap.data();
-          if (Array.isArray(data.tasks)) {
-            existingTasks = data.tasks;
+          employeeTasks = docSnap.data() || {};
+        }
+        for (const empId of selectedEmployeeIds) {
+          const empTasks = Array.isArray(employeeTasks[empId]) ? employeeTasks[empId] : [];
+          let conflict = false;
+          const curDate = new Date(start);
+          const endDate = new Date(end);
+          while (curDate <= endDate) {
+            const ymd = curDate.toISOString().slice(0, 10); // yyyy-MM-dd
+            if (empTasks.some((task: DeliverableRow & { assignedDate?: string }) => task.assignedDate === ymd)) {
+              conflict = true;
+              break;
+            }
+            curDate.setDate(curDate.getDate() + 1);
+          }
+          if (conflict) {
+            toast.error('choose another date or another employee');
+            return;
           }
         }
-        // Prepare array of maps (one per selected employee)
-        const taskArray = selectedEmployeeIds.map(empId => ({
-          deliverableId: selectedDeliverable.id,
-          deliverableName: selectedDeliverable.name,
-          projectId: selectedDeliverableProjectId,
-          employeeId: empId,
-          assignedDate,
-          deliveryDate,
-          createdAt: now,
-        }));
-        // Write back the combined array
-        await setDoc(taskDocRef, { tasks: [...existingTasks, ...taskArray] }, { merge: true });
+        // No conflict, assign
+        for (const empId of selectedEmployeeIds) {
+          const empTasks = Array.isArray(employeeTasks[empId]) ? employeeTasks[empId] : [];
+          const newTask = {
+            type: 'deliverable',
+            deliverableId: selectedDeliverable.id,
+            deliverableName: selectedDeliverable.name,
+            projectId: selectedDeliverableProjectId,
+            employeeId: empId,
+            assignedDate: new Date(assignedDate).toISOString().slice(0, 10),
+            deliveryDate: new Date(deliveryDate).toISOString().slice(0, 10),
+            createdAt: now,
+          };
+          empTasks.push(newTask);
+          employeeTasks[empId] = empTasks;
+        }
+        await setDoc(employeeTaskDocRef, employeeTasks, { merge: true });
       }
       toast.success("Assigned employees updated and task created");
       setAssignModalOpen(false);
