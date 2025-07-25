@@ -83,6 +83,50 @@ function ProjectDeliverables() {
     [data]
   );
 
+  // Map to store fetched task dates for each deliverable-employee pair
+  const [taskDatesMap, setTaskDatesMap] = useState<Record<string, { assignedDate?: string; completeDate?: string; deliveryDate?: string }>>({});
+
+  // Fetch assignedDate and completeDate for each deliverable-employee pair from task collection
+  useEffect(() => {
+    // Use onSnapshot for real-time updates
+    const unsubscribes: (() => void)[] = [];
+    let isMounted = true;
+    const deliverableRows = allDeliverables;
+    const newMap: Record<string, { assignedDate?: string; completeDate?: string; deliveryDate?: string }> = {};
+    const employeeIds = new Set<string>();
+    for (const deliverable of deliverableRows) {
+      if (!Array.isArray(deliverable.assignedEmployees)) continue;
+      for (const empId of deliverable.assignedEmployees) {
+        employeeIds.add(empId);
+      }
+    }
+    employeeIds.forEach(empId => {
+      const employeeTaskDocRef = doc(firestore, "task", empId);
+      const unsubscribe = onSnapshot(employeeTaskDocRef, (docSnap) => {
+        if (!isMounted) return;
+        const data = docSnap.exists() ? docSnap.data() : {};
+        const tasks = Array.isArray(data.tasks) ? data.tasks : [];
+        for (const deliverable of deliverableRows) {
+          if (!Array.isArray(deliverable.assignedEmployees) || !deliverable.assignedEmployees.includes(empId)) continue;
+          const task = tasks.find((t: any) => t.deliverableId === deliverable.id);
+          if (task) {
+            newMap[`${deliverable.id}_${empId}`] = {
+              assignedDate: task.assignedDate,
+              completeDate: task.completeDate,
+              deliveryDate: task.deliveryDate,
+            };
+          }
+        }
+        setTaskDatesMap(current => ({ ...current, ...newMap }));
+      });
+      unsubscribes.push(unsubscribe);
+    });
+    return () => {
+      isMounted = false;
+      unsubscribes.forEach(unsub => unsub());
+    };
+  }, [allDeliverables]);
+
   // Table state
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -126,37 +170,51 @@ function ProjectDeliverables() {
       );
       await updateDoc(projectDocRef, { deliverables: updatedDeliverables });
 
-      // --- Use single 'employee' document in 'task' collection, robust date handling ---
+      // --- New: Per-employee document in 'task' collection with date range overlap check ---
       if (selectedEmployeeIds.length > 0 && assignedDate && deliveryDate) {
         const start = new Date(assignedDate);
         const end = new Date(deliveryDate);
-        const employeeTaskDocRef = doc(firestore, "task", "employee");
-        const docSnap = await getDoc(employeeTaskDocRef);
-        let employeeTasks = {};
-        if (docSnap.exists()) {
-          employeeTasks = docSnap.data() || {};
+        function rangesOverlap(start1: Date, end1: Date, start2: Date, end2: Date) {
+          return start1 <= end2 && start2 <= end1;
         }
+        let conflictFound = false;
+        // First, check all selected employees for conflicts
         for (const empId of selectedEmployeeIds) {
-          const empTasks = Array.isArray(employeeTasks[empId]) ? employeeTasks[empId] : [];
-          let conflict = false;
-          const curDate = new Date(start);
-          const endDate = new Date(end);
-          while (curDate <= endDate) {
-            const ymd = curDate.toISOString().slice(0, 10); // yyyy-MM-dd
-            if (empTasks.some((task: DeliverableRow & { assignedDate?: string }) => task.assignedDate === ymd)) {
-              conflict = true;
+          const employeeTaskDocRef = doc(firestore, "task", empId);
+          const docSnap = await getDoc(employeeTaskDocRef);
+          let existingTasks: any[] = [];
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            existingTasks = Array.isArray(data.tasks) ? data.tasks : [];
+          }
+          for (const task of existingTasks) {
+            if (!task.assignedDate) continue;
+            const taskStart = new Date(task.assignedDate);
+            const taskEnd = task.completeDate ? new Date(task.completeDate)
+                              : task.deliveryDate ? new Date(task.deliveryDate)
+                              : new Date(task.assignedDate);
+            if (rangesOverlap(start, end, taskStart, taskEnd)) {
+              conflictFound = true;
               break;
             }
-            curDate.setDate(curDate.getDate() + 1);
           }
-          if (conflict) {
-            toast.error('choose another date or another employee');
-            return;
-          }
+          if (conflictFound) break;
         }
-        // No conflict, assign
+        if (conflictFound) {
+          toast.error('already assigned task, choose another employee');
+          return;
+        }
+        // If no conflicts, assign to all selected employees
+        let assignedAny = false;
         for (const empId of selectedEmployeeIds) {
-          const empTasks = Array.isArray(employeeTasks[empId]) ? employeeTasks[empId] : [];
+          const employeeTaskDocRef = doc(firestore, "task", empId);
+          const docSnap = await getDoc(employeeTaskDocRef);
+          let existingTasks: any[] = [];
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            existingTasks = Array.isArray(data.tasks) ? data.tasks : [];
+          }
+          const now = new Date().toISOString();
           const newTask = {
             type: 'deliverable',
             deliverableId: selectedDeliverable.id,
@@ -167,12 +225,13 @@ function ProjectDeliverables() {
             deliveryDate: new Date(deliveryDate).toISOString().slice(0, 10),
             createdAt: now,
           };
-          empTasks.push(newTask);
-          employeeTasks[empId] = empTasks;
+          await setDoc(employeeTaskDocRef, { tasks: [...existingTasks, newTask] }, { merge: true });
+          assignedAny = true;
         }
-        await setDoc(employeeTaskDocRef, employeeTasks, { merge: true });
+        if (assignedAny) {
+          toast.success("Assigned employees updated and task created");
+        }
       }
-      toast.success("Assigned employees updated and task created");
       setAssignModalOpen(false);
     } catch (err) {
       toast.error("Failed to assign employees or create task");
@@ -208,10 +267,34 @@ function ProjectDeliverables() {
           if (!Array.isArray(ids) || ids.length === 0) return "-";
           return ids.map(id => employeeMap[id] || id).join(", ");
         },
+      },
+      {
+        id: "assignedDateFetched",
+        header: "Assigned Date",
+        cell: ({ row }) => {
+          const deliverable = row.original;
+          if (!Array.isArray(deliverable.assignedEmployees) || deliverable.assignedEmployees.length === 0) return "-";
+          const empId = deliverable.assignedEmployees[0];
+          const key = `${deliverable.id}_${empId}`;
+          const date = taskDatesMap[key]?.assignedDate;
+          return date ? new Date(date).toLocaleDateString() : "-";
+        },
+      },
+      {
+        id: "completeDateFetched",
+        header: "Task Completion Date",
+        cell: ({ row }) => {
+          const deliverable = row.original;
+          if (!Array.isArray(deliverable.assignedEmployees) || deliverable.assignedEmployees.length === 0) return "-";
+          const empId = deliverable.assignedEmployees[0];
+          const key = `${deliverable.id}_${empId}`;
+          const date = taskDatesMap[key]?.completeDate || taskDatesMap[key]?.deliveryDate;
+          return date ? new Date(date).toLocaleDateString() : "-";
+        },
       }
     );
     return baseCols.filter(col => col.accessorKey !== "deliveryDate"); // Remove deliveryDate column if present
-  }, [handleEdit, handleAssignEmployee, employeeMap]);
+  }, [handleEdit, handleAssignEmployee, employeeMap, taskDatesMap]);
 
   const table = useReactTable({
     data: allDeliverables,
