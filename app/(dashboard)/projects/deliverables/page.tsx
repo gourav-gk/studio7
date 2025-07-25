@@ -157,6 +157,28 @@ function ProjectDeliverables() {
       const project = data.find(p => p.projectId === selectedDeliverableProjectId);
       if (!project) throw new Error("Project not found");
       const now = new Date().toISOString();
+      // Find previous assigned employees for this deliverable
+      const prevDeliverable = (project.deliverables as DeliverableRow[]).find(d => d.id === selectedDeliverable.id);
+      const prevAssignedEmployees: string[] = Array.isArray(prevDeliverable?.assignedEmployees) ? prevDeliverable.assignedEmployees : [];
+      // Detect removed employees (all previous if assignedEmployees is empty)
+      const removedEmployees = prevAssignedEmployees.filter(empId => !selectedEmployeeIds.includes(empId));
+      // Remove ONLY the task for this deliverable from each removed employee's task document
+      for (const empId of removedEmployees) {
+        const employeeTaskDocRef = doc(firestore, "task", empId);
+        const docSnap = await getDoc(employeeTaskDocRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          const tasks = Array.isArray(data.tasks) ? data.tasks : [];
+          // Only remove the task for this deliverable, leave other tasks untouched
+          const newTasks = tasks.filter((task: any) => task.deliverableId !== selectedDeliverable.id);
+          await setDoc(employeeTaskDocRef, { tasks: newTasks }, { merge: true });
+        }
+      }
+      // If assignedEmployees is empty, skip assignment logic
+      if (selectedEmployeeIds.length === 0) {
+        setAssignModalOpen(false);
+        return;
+      }
       const updatedDeliverables = (project.deliverables as DeliverableRow[]).map(d =>
         d.id === selectedDeliverable.id
           ? {
@@ -177,8 +199,9 @@ function ProjectDeliverables() {
         function rangesOverlap(start1: Date, end1: Date, start2: Date, end2: Date) {
           return start1 <= end2 && start2 <= end1;
         }
-        let conflictFound = false;
         // First, check all selected employees for conflicts
+        let conflictFound = false;
+        let conflictedEmployees: string[] = [];
         for (const empId of selectedEmployeeIds) {
           const employeeTaskDocRef = doc(firestore, "task", empId);
           const docSnap = await getDoc(employeeTaskDocRef);
@@ -195,12 +218,15 @@ function ProjectDeliverables() {
                               : new Date(task.assignedDate);
             if (rangesOverlap(start, end, taskStart, taskEnd)) {
               conflictFound = true;
+              conflictedEmployees.push(empId);
               break;
             }
           }
           if (conflictFound) break;
         }
         if (conflictFound) {
+          // Remove conflicted employees from the dropdown (UI) but do NOT delete their data
+          setSelectedEmployeeIds(prev => prev.filter(id => !conflictedEmployees.includes(id)));
           toast.error('already assigned task, choose another employee');
           return;
         }
