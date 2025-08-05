@@ -15,12 +15,25 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
+type Task = {
+  shootId?: string;
+  shootName?: string;
+  projectId?: string;
+  employeeId?: string;
+  assignedDate?: string;
+  deliveryDate?: string;
+  completeDate?: string;
+  createdAt?: string;
+  type?: string;
+};
+
 export default function ProjectShootsPage() {
   const { isLoading, data } = useProjectsView();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [selectedShoot, setSelectedShoot] = useState<ShootRow | null>(null);
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([]);
+  // const [employeeTasks, setEmployeeTasks] = useState<Record<string, Task[]>>({});
 
   // Fetch employees
   useEffect(() => {
@@ -90,14 +103,18 @@ export default function ProjectShootsPage() {
         const ymd = new Date(selectedShoot.date).toISOString().slice(0, 10); // yyyy-MM-dd
         const employeeTaskDocRef = doc(firestore, "task", "employee");
         const docSnap = await getDoc(employeeTaskDocRef);
-        let employeeTasks = {};
+        let employeeTasks: Record<string, Task[]> = {};
         if (docSnap.exists()) {
-          employeeTasks = docSnap.data() || {};
+          const data = docSnap.data() || {};
+          // If the data is not in the expected format, coerce it
+          employeeTasks = Object.fromEntries(
+            Object.entries(data).map(([k, v]) => [k, Array.isArray(v) ? v as Task[] : []])
+          );
         }
         for (const empId of selectedEmployeeIds) {
-          const empTasks = Array.isArray(employeeTasks[empId]) ? employeeTasks[empId] : [];
+          const empTasks: Task[] = Array.isArray(employeeTasks[empId]) ? employeeTasks[empId] : [];
           let conflict = false;
-          if (empTasks.some(task => task.assignedDate === ymd)) {
+          if (empTasks.some((task: Task) => task.assignedDate === ymd)) {
             conflict = true;
           }
           if (conflict) {
@@ -108,7 +125,7 @@ export default function ProjectShootsPage() {
         // No conflict, assign
         const now = new Date().toISOString();
         for (const empId of selectedEmployeeIds) {
-          const empTasks = Array.isArray(employeeTasks[empId]) ? employeeTasks[empId] : [];
+          const empTasks: Task[] = Array.isArray(employeeTasks[empId]) ? employeeTasks[empId] : [];
           const newTask = {
             type: 'shoot',
             shootId: selectedShoot.id,

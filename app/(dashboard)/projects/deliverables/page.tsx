@@ -15,6 +15,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
+type Task = {
+  deliverableId?: string;
+  deliverableName?: string;
+  projectId?: string;
+  employeeId?: string;
+  assignedDate?: string;
+  deliveryDate?: string;
+  completeDate?: string;
+  createdAt?: string;
+  type?: string;
+};
+
 function ProjectDeliverables() {
   const { isLoading, data } = useProjectsView();
   const [selectedDeliverable, setSelectedDeliverable] = useState<DeliverableRow | null>(null);
@@ -56,7 +68,7 @@ function ProjectDeliverables() {
 
   // Employee map for quick lookup
   const employeeMap = useMemo(() => {
-    const map = {};
+    const map: Record<string, string> = {};
     employees.forEach(emp => {
       map[emp.uId] = emp.name;
     });
@@ -74,9 +86,9 @@ function ProjectDeliverables() {
             projectName: project.projectName,
             assignedEmployees: Array.isArray(d.assignedEmployees) ? d.assignedEmployees : [],
             _projectId: project.projectId, // for update reference
-            createdAt: d.createdAt || "",
-            completeDate: d.completeDate || "",
-            deliveryDate: d.deliveryDate || "",
+            createdAt: (d as Partial<DeliverableRow> & { createdAt?: string }).createdAt || "",
+            completeDate: (d as Partial<DeliverableRow> & { completeDate?: string }).completeDate || "",
+            deliveryDate: (d as Partial<DeliverableRow> & { deliveryDate?: string }).deliveryDate || "",
           }))
         : []
     ),
@@ -105,10 +117,10 @@ function ProjectDeliverables() {
       const unsubscribe = onSnapshot(employeeTaskDocRef, (docSnap) => {
         if (!isMounted) return;
         const data = docSnap.exists() ? docSnap.data() : {};
-        const tasks = Array.isArray(data.tasks) ? data.tasks : [];
+        const tasks: Task[] = Array.isArray(data.tasks) ? data.tasks : [];
         for (const deliverable of deliverableRows) {
           if (!Array.isArray(deliverable.assignedEmployees) || !deliverable.assignedEmployees.includes(empId)) continue;
-          const task = tasks.find((t: any) => t.deliverableId === deliverable.id);
+          const task = tasks.find((t: Task) => t.deliverableId === deliverable.id);
           if (task) {
             newMap[`${deliverable.id}_${empId}`] = {
               assignedDate: task.assignedDate,
@@ -142,7 +154,7 @@ function ProjectDeliverables() {
   const handleAssignEmployee = useCallback((deliverable: DeliverableRow) => {
     setSelectedDeliverable(deliverable);
     setSelectedEmployeeIds(deliverable.assignedEmployees || []);
-    setSelectedDeliverableProjectId((deliverable as DeliverableRow)._projectId || null);
+    setSelectedDeliverableProjectId((deliverable as Partial<DeliverableRow> & { _projectId?: string })._projectId || null);
     setAssignedDate("");
     setDeliveryDate("");
     setAssignModalOpen(true);
@@ -158,19 +170,19 @@ function ProjectDeliverables() {
       if (!project) throw new Error("Project not found");
       const now = new Date().toISOString();
       // Find previous assigned employees for this deliverable
-      const prevDeliverable = (project.deliverables as DeliverableRow[]).find(d => d.id === selectedDeliverable.id);
+      const prevDeliverable = (project.deliverables as DeliverableRow[]).find((d: DeliverableRow) => d.id === selectedDeliverable.id);
       const prevAssignedEmployees: string[] = Array.isArray(prevDeliverable?.assignedEmployees) ? prevDeliverable.assignedEmployees : [];
       // Detect removed employees (all previous if assignedEmployees is empty)
-      const removedEmployees = prevAssignedEmployees.filter(empId => !selectedEmployeeIds.includes(empId));
+      const removedEmployees: string[] = prevAssignedEmployees.filter(empId => !selectedEmployeeIds.includes(empId));
       // Remove ONLY the task for this deliverable from each removed employee's task document
       for (const empId of removedEmployees) {
         const employeeTaskDocRef = doc(firestore, "task", empId);
         const docSnap = await getDoc(employeeTaskDocRef);
         if (docSnap.exists()) {
           const data = docSnap.data();
-          const tasks = Array.isArray(data.tasks) ? data.tasks : [];
+          const tasks: Task[] = Array.isArray(data.tasks) ? data.tasks : [];
           // Only remove the task for this deliverable, leave other tasks untouched
-          const newTasks = tasks.filter((task: any) => task.deliverableId !== selectedDeliverable.id);
+          const newTasks = tasks.filter((task: Task) => task.deliverableId !== selectedDeliverable.id);
           await setDoc(employeeTaskDocRef, { tasks: newTasks }, { merge: true });
         }
       }
@@ -184,9 +196,9 @@ function ProjectDeliverables() {
           ? {
               ...d,
               assignedEmployees: selectedEmployeeIds,
-              createdAt: d.createdAt || now,
-              deliveryDate: deliveryDate || d.deliveryDate || "",
-              assignedDate: assignedDate || d.assignedDate || "",
+              createdAt: (d as Partial<DeliverableRow> & { createdAt?: string }).createdAt || now,
+              deliveryDate: deliveryDate || (d as Partial<DeliverableRow> & { deliveryDate?: string }).deliveryDate || "",
+              assignedDate: assignedDate || (d as Partial<DeliverableRow> & { assignedDate?: string }).assignedDate || "",
             }
           : d
       );
@@ -201,15 +213,11 @@ function ProjectDeliverables() {
         }
         // First, check all selected employees for conflicts
         let conflictFound = false;
-        let conflictedEmployees: string[] = [];
+        const conflictedEmployees: string[] = [];
         for (const empId of selectedEmployeeIds) {
           const employeeTaskDocRef = doc(firestore, "task", empId);
           const docSnap = await getDoc(employeeTaskDocRef);
-          let existingTasks: any[] = [];
-          if (docSnap.exists()) {
-            const data = docSnap.data();
-            existingTasks = Array.isArray(data.tasks) ? data.tasks : [];
-          }
+          const existingTasks: Task[] = docSnap.exists() ? (Array.isArray(docSnap.data().tasks) ? docSnap.data().tasks : []) : [];
           for (const task of existingTasks) {
             if (!task.assignedDate) continue;
             const taskStart = new Date(task.assignedDate);
@@ -235,13 +243,9 @@ function ProjectDeliverables() {
         for (const empId of selectedEmployeeIds) {
           const employeeTaskDocRef = doc(firestore, "task", empId);
           const docSnap = await getDoc(employeeTaskDocRef);
-          let existingTasks: any[] = [];
-          if (docSnap.exists()) {
-            const data = docSnap.data();
-            existingTasks = Array.isArray(data.tasks) ? data.tasks : [];
-          }
+          const existingTasks: Task[] = docSnap.exists() ? (Array.isArray(docSnap.data().tasks) ? docSnap.data().tasks : []) : [];
           const now = new Date().toISOString();
-          const newTask = {
+          const newTask: Task = {
             type: 'deliverable',
             deliverableId: selectedDeliverable.id,
             deliverableName: selectedDeliverable.name,
@@ -280,9 +284,15 @@ function ProjectDeliverables() {
         header: "Task Completion Date",
         cell: ({ row }) => {
           const completeDate = row.getValue("completeDate");
-          const deliveryDate = row.original.deliveryDate;
+          const deliveryDate = (row.original as Partial<DeliverableRow> & { deliveryDate?: string }).deliveryDate;
           const dateToShow = completeDate || deliveryDate;
-          return <div>{dateToShow ? new Date(dateToShow).toLocaleString() : "-"}</div>;
+          return (
+            <div>
+              {typeof dateToShow === 'string' || typeof dateToShow === 'number' || dateToShow instanceof Date
+                ? new Date(dateToShow).toLocaleString()
+                : "-"}
+            </div>
+          );
         },
       },
       {
@@ -319,7 +329,7 @@ function ProjectDeliverables() {
         },
       }
     );
-    return baseCols.filter(col => col.accessorKey !== "deliveryDate"); // Remove deliveryDate column if present
+    return baseCols.filter(col => 'accessorKey' in col ? (col as Partial<{ accessorKey?: string }>).accessorKey !== "deliveryDate" : true); // Remove deliveryDate column if present
   }, [handleEdit, handleAssignEmployee, employeeMap, taskDatesMap]);
 
   const table = useReactTable({

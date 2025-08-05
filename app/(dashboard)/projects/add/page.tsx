@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { useProjectForm } from "../../../../hooks/useProjectForm";
 import { BasicInformationSection } from "../components/BasicInformationSection";
@@ -16,7 +16,7 @@ import { firestore } from "@/lib/firebase";
 import { toast } from "sonner";
 import { Project } from "../types";
 
-export default function AddProject() {
+function AddProject() {
   const searchParams = useSearchParams();
   const editId = searchParams.get("edit");
   const [isEdit, setIsEdit] = useState(false);
@@ -195,5 +195,13 @@ export default function AddProject() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function AddProjectWithSuspense() {
+  return (
+    <Suspense>
+      <AddProject />
+    </Suspense>
   );
 }
