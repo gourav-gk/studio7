@@ -41,11 +41,13 @@ function AddProject() {
     setFormData,
     setShootTableData,
     setDeliverablesTableData,
+    setIsEditMode,
   } = useProjectForm();
 
   useEffect(() => {
     if (editId) {
       setIsEdit(true);
+      setIsEditMode(true);
       setLoadingEdit(true);
       // Fetch project data and prefill
       getDoc(doc(firestore, "projects", editId)).then((docSnap) => {
@@ -94,8 +96,10 @@ function AddProject() {
         }
         setLoadingEdit(false);
       });
+    } else {
+      setIsEditMode(false);
     }
-  }, [editId, setFormData, setShootTableData, setDeliverablesTableData]);
+  }, [editId, setFormData, setShootTableData, setDeliverablesTableData, setIsEditMode]);
 
   // Custom submit handler for edit
   const handleEditSubmit = async (e: React.FormEvent) => {

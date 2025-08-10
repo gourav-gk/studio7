@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal } from "lucide-react";
+import { getEmployeeNames } from "@/lib/utils";
 
 export interface ShootRow {
   id: string;
@@ -24,10 +25,13 @@ export interface ShootRow {
   assistant: string;
   drone: string;
   other: string;
-  assignedEmployees?: string[]; // for future use
+  assignedEmployees?: { [role: string]: string[] };
 }
 
-export function getShootColumns(onAssignEmployee: (shoot: ShootRow) => void): ColumnDef<ShootRow>[] {
+export function getShootColumns(
+  onAssignEmployee: (shoot: ShootRow) => void,
+  employees: { uId: string; name: string }[]
+): ColumnDef<ShootRow>[] {
   return [
     {
       accessorKey: "projectName",
@@ -58,38 +62,116 @@ export function getShootColumns(onAssignEmployee: (shoot: ShootRow) => void): Co
     {
       accessorKey: "traditionalPhotographer",
       header: "Traditional Photographer",
-      cell: ({ row }) => <div>{row.getValue("traditionalPhotographer")}</div>,
+      cell: ({ row }) => {
+        const assigned = row.original.assignedEmployees?.traditionalPhotographer || [];
+        const names = getEmployeeNames(assigned, employees);
+        return (
+          <div>
+            {assigned.length === 0 ? row.getValue("traditionalPhotographer") : assigned.length}
+            {assigned.length > 0 && (
+              <span className="ml-2 text-gray-500">({names.join(", ")})</span>
+            )}
+          </div>
+        );
+      },
     },
     {
       accessorKey: "traditionalVideographer",
       header: "Traditional Videographer",
-      cell: ({ row }) => <div>{row.getValue("traditionalVideographer")}</div>,
+      cell: ({ row }) => {
+        const assigned = row.original.assignedEmployees?.traditionalVideographer || [];
+        const names = getEmployeeNames(assigned, employees);
+        return (
+          <div>
+            {assigned.length === 0 ? row.getValue("traditionalVideographer") : assigned.length}
+            {assigned.length > 0 && (
+              <span className="ml-2 text-gray-500">({names.join(", ")})</span>
+            )}
+          </div>
+        );
+      },
     },
     {
       accessorKey: "candid",
       header: "Candid",
-      cell: ({ row }) => <div>{row.getValue("candid")}</div>,
+      cell: ({ row }) => {
+        const assigned = row.original.assignedEmployees?.candid || [];
+        const names = getEmployeeNames(assigned, employees);
+        return (
+          <div>
+            {assigned.length === 0 ? row.getValue("candid") : assigned.length}
+            {assigned.length > 0 && (
+              <span className="ml-2 text-gray-500">({names.join(", ")})</span>
+            )}
+          </div>
+        );
+      },
     },
     {
       accessorKey: "cinemetographer",
       header: "Cinematographer",
-      cell: ({ row }) => <div>{row.getValue("cinemetographer")}</div>,
+      cell: ({ row }) => {
+        const assigned = row.original.assignedEmployees?.cinematographer || [];
+        const names = getEmployeeNames(assigned, employees);
+        return (
+          <div>
+            {assigned.length === 0 ? row.getValue("cinemetographer") : assigned.length}
+            {assigned.length > 0 && (
+              <span className="ml-2 text-gray-500">({names.join(", ")})</span>
+            )}
+          </div>
+        );
+      },
     },
     {
       accessorKey: "assistant",
       header: "Assistant",
-      cell: ({ row }) => <div>{row.getValue("assistant")}</div>,
+      cell: ({ row }) => {
+        const assigned = row.original.assignedEmployees?.assistant || [];
+        const names = getEmployeeNames(assigned, employees);
+        return (
+          <div>
+            {assigned.length === 0 ? row.getValue("assistant") : assigned.length}
+            {assigned.length > 0 && (
+              <span className="ml-2 text-gray-500">({names.join(", ")})</span>
+            )}
+          </div>
+        );
+      },
     },
     {
       accessorKey: "drone",
       header: "Drone",
-      cell: ({ row }) => <div>{row.getValue("drone")}</div>,
+      cell: ({ row }) => {
+        const assigned = row.original.assignedEmployees?.drone || [];
+        const names = getEmployeeNames(assigned, employees);
+        return (
+          <div>
+            {assigned.length === 0 ? row.getValue("drone") : assigned.length}
+            {assigned.length > 0 && (
+              <span className="ml-2 text-gray-500">({names.join(", ")})</span>
+            )}
+          </div>
+        );
+      },
     },
     {
       accessorKey: "other",
       header: "Others",
-      cell: ({ row }) => <div>{row.getValue("other")}</div>,
+      cell: ({ row }) => {
+        const assigned = row.original.assignedEmployees?.others || [];
+        const names = getEmployeeNames(assigned, employees);
+        return (
+          <div>
+            {assigned.length === 0 ? row.getValue("other") : assigned.length}
+            {assigned.length > 0 && (
+              <span className="ml-2 text-gray-500">({names.join(", ")})</span>
+            )}
+          </div>
+        );
+      },
     },
+
     {
       id: "actions",
       header: "Actions",
@@ -116,4 +198,4 @@ export function getShootColumns(onAssignEmployee: (shoot: ShootRow) => void): Co
       enableHiding: false,
     },
   ];
-} 
+}

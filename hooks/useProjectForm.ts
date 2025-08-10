@@ -79,6 +79,7 @@ export function useProjectForm() {
   const [deliverables, setDeliverables] = useState<Deliverable[]>([]);
   const [shootTableData, setShootTableData] = useState<ShootRow[]>([]);
   const [deliverablesTableData, setDeliverablesTableData] = useState<DeliverableRow[]>([]);
+  const [isEditMode, setIsEditMode] = useState(false);
 
   // Fetch dropdown data
   useEffect(() => {
@@ -157,6 +158,7 @@ export function useProjectForm() {
 
   // Update shoot table when package changes
   useEffect(() => {
+    if (isEditMode) return;
     async function fetchShootsForPackage() {
       if (!formData.package) {
         setShootTableData([]);
@@ -209,10 +211,11 @@ export function useProjectForm() {
     }
 
     fetchShootsForPackage();
-  }, [formData.package]);
+  }, [formData.package, isEditMode]);
 
   // Fetch deliverables for selected package
   useEffect(() => {
+    if (isEditMode) return;
     async function fetchDeliverablesForPackage() {
       if (!formData.package) {
         setDeliverablesTableData([]);
@@ -238,7 +241,7 @@ export function useProjectForm() {
       setDeliverablesTableData(deliverablesRows);
     }
     fetchDeliverablesForPackage();
-  }, [formData.package, packages]);
+  }, [formData.package, packages, isEditMode]);
 
   // Calculate final amount and due
   useEffect(() => {
@@ -451,5 +454,6 @@ export function useProjectForm() {
     setFormData,
     setShootTableData,
     setDeliverablesTableData,
+    setIsEditMode,
   };
 }

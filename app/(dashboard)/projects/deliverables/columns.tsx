@@ -16,6 +16,12 @@ export interface DeliverableRow {
   qty: string;
   projectName: string;
   assignedEmployees?: string[];
+  createdAt?: string;
+  completeDate: string;
+  deliveryDate: string;
+  _projectId?: string;
+  assignedDate?: string;
+  
 }
 
 export function getDeliverableColumns(
@@ -76,4 +82,4 @@ export function getDeliverableColumns(
       enableHiding: false,
     },
   ];
-} 
+}
