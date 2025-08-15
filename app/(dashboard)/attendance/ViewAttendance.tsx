@@ -189,7 +189,12 @@ export default function ViewAttendance({ selectedMonth }: ViewAttendanceProps) {
           updatedAt: new Date(),
         };
 
-        await updateDoc(doc(firestore, "attendance", date), newRecord);
+        // await updateDoc(doc(firestore, "attendance", date), newRecord);
+        await updateDoc(
+  doc(firestore, "attendance", date),
+  { ...newRecord } as Partial<DailyAttendance>
+);
+
         toast.success("Attendance created successfully!");
       }
 

@@ -4,6 +4,11 @@ export interface AttendanceRecord {
   status: 'present' | 'absent' | 'half-day';
   timestamp: Date;
 }
+export interface AuthUser {
+  permissions?: string[]; // ✅ explicitly a string array
+  // other fields...
+}
+
 
 export interface DailyAttendance {
   date: string; // Format: YYYY-MM-DD

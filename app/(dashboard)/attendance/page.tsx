@@ -7,9 +7,11 @@ import ViewAttendance from "./ViewAttendance";
 import { useAuth } from "@/context/AuthProvider";
 import { useRouter } from "next/navigation";
 import { ClientOnly } from "@/components/ClientOnly";
+import { AuthUser } from "./types";
 
 export default function AttendancePage() {
-  const { user } = useAuth();
+ const { user } = useAuth() as { user: AuthUser | null };
+
   const router = useRouter();
 
   // Check if user has permission to add attendance
