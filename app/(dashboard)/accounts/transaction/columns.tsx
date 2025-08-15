@@ -53,5 +53,3 @@ export const getTransactionColumns = (): ColumnDef<TransactionItem>[] => [
     },
   },
 ];
-
-

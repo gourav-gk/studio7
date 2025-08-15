@@ -18,8 +18,9 @@ import Pagination from "@/components/shared/Pagination";
 import TableSkeleton from "@/components/shared/skeletons/TableSkeleton";
 import TableActions from "@/components/shared/TableActions";
 import { menuContent } from "@/components/shared/TableMenuContent";
-import { toast } from "sonner";
 import { getTaskColumns, RawTask, Task } from "./columns";
+import AddTaskModal from "./AddTaskModal";
+import { toast } from "sonner";
 
 export default function TasksTable() {
   const [isLoading, setIsLoading] = useState(true);
@@ -28,10 +29,41 @@ export default function TasksTable() {
   const [sorting, setSorting] = useState<SortingState>([{ id: "date", desc: true }]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [open, setOpen] = useState(false);
   const [rowSelection, setRowSelection] = useState({});
+  const [selectedTask, setSelectedTask] = useState<Task>();
+
+  const handleEdit = useCallback((task: Task) => {
+    setSelectedTask(task);
+    setOpen(true);
+  }, []);
+
+  const handleDelete = useCallback(async (task: Task) => {
+    try {
+      const taskDocRef = doc(firestore, "task", task.employeeId);
+      const snap = await getDoc(taskDocRef);
+
+      if (!snap.exists()) {
+        toast.error("Task not found");
+        return;
+      }
+
+      const tasks = snap.data()?.tasks || [];
+      const updatedTasks = tasks.filter((t: { taskId: string }) => t.taskId !== task.id);
+
+      await updateDoc(taskDocRef, { tasks: updatedTasks });
+      toast.success("Task deleted successfully");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to delete task");
+    }
+  }, []);
 
   // columns (inline for clarity)
-  const columns = useMemo(() => getTaskColumns(), []);
+  const columns = useMemo(
+    () => getTaskColumns(handleEdit, handleDelete),
+    [handleEdit, handleDelete]
+  );
 
   const table = useReactTable({
     data: flatTasks,
@@ -51,6 +83,10 @@ export default function TasksTable() {
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
   });
+
+  const handleClose = useCallback(() => {
+    setOpen(false);
+  }, []);
 
   // Subscribe to users collection to build map userId -> name
   useEffect(() => {
@@ -75,14 +111,19 @@ export default function TasksTable() {
         const userId = docSnap.id;
         const docData = docSnap.data() || {};
         const tasks: RawTask[] = Array.isArray(docData.tasks) ? docData.tasks : [];
-
         tasks.forEach((t) => {
           const name = t.name;
-          let date: Date;
+          let deliveryDate: Date;
+          let assignedDate: Date;
           if (t.deliveryDate) {
-            date = new Date(t.assignedDate);
+            deliveryDate = new Date(t.deliveryDate);
           } else {
-            date = new Date();
+            deliveryDate = new Date();
+          }
+          if (t.assignedDate) {
+            assignedDate = new Date(t.assignedDate);
+          } else {
+            assignedDate = new Date();
           }
           const status = (t.status as string) || "Pending";
           const employeeName = usersMap[userId];
@@ -93,7 +134,8 @@ export default function TasksTable() {
             name,
             employeeId: t.employeeId || userId,
             employeeName,
-            date,
+            deliveryDate,
+            assignedDate,
             status,
             projectId: t.projectId,
             shootId: t.shootId,
@@ -103,7 +145,7 @@ export default function TasksTable() {
       });
 
       // sort by date descending
-      all.sort((a, b) => b.date.getTime() - a.date.getTime());
+      all.sort((a, b) => b.deliveryDate.getTime() - a.deliveryDate.getTime());
 
       setFlatTasks(all);
       setIsLoading(false);
@@ -112,59 +154,61 @@ export default function TasksTable() {
     return () => unsub();
   }, [usersMap]); // re-run if usersMap changes (to update names)
 
-  // Bulk delete: remove selected tasks from the corresponding user docs (task/{userId})
-  const handleBulkDelete = useCallback(async (selected: Task[]) => {
-    if (selected.length === 0) return;
+  async function updateTaskStatus(tasks: Task[], newStatus: string) {
     try {
-      // Group tasks by userId so we only fetch/update each user doc once
-      const byUser = selected.reduce<Record<string, Task[]>>((acc, t) => {
-        (acc[t.employeeId] = acc[t.employeeId] || []).push(t);
-        return acc;
-      }, {});
-
-      const updates: Promise<void>[] = Object.entries(byUser).map(
-        async ([userId, tasksToRemove]) => {
-          const taskDocRef = doc(firestore, "task", userId);
-          const snap = await getDoc(taskDocRef);
-          if (!snap.exists()) return;
-
-          const existing: RawTask[] = Array.isArray(snap.data().tasks) ? snap.data().tasks : [];
-
-          // Build a filter that removes any task that matches characteristics of the selected tasks
-          const filtered = existing.filter((et) => {
-            // If any selected task matches this existing task by key properties, we should remove it
-            const shouldRemove = tasksToRemove.some((st) => {
-              const r = st.raw;
-              // compare by many fields to ensure match: createdAt, assignedDate, shootId, projectId, role, employeeId, type
-              return (
-                (String(et.createdAt || "") === String(r.createdAt || "") &&
-                  String(et.assignedDate || "") === String(r.assignedDate || "") &&
-                  String(et.shootId || "") === String(r.shootId || "") &&
-                  String(et.projectId || "") === String(r.projectId || "") &&
-                  String(et.employeeId || "") === String(r.employeeId || "") &&
-                  String(et.role || "") === String(r.role || "") &&
-                  String(et.type || "") === String(r.type || "")) ||
-                // fallback: also compare deliverableName + deliveryDate + employeeId
-                (String(et.deliverableName || "") === String(r.deliverableName || "") &&
-                  String(et.deliveryDate || "") === String(r.deliveryDate || "") &&
-                  String(et.employeeId || "") === String(r.employeeId || ""))
-              );
-            });
-            return !shouldRemove;
-          });
-
-          await updateDoc(taskDocRef, { tasks: filtered });
+      // Group tasks by employeeId so we update each Firestore doc once
+      const groupedByUser: Record<string, Task[]> = {};
+      tasks.forEach((task) => {
+        if (!groupedByUser[task.employeeId]) {
+          groupedByUser[task.employeeId] = [];
         }
-      );
+        groupedByUser[task.employeeId].push(task);
+      });
 
-      await Promise.all(updates);
+      for (const [employeeId, userTasks] of Object.entries(groupedByUser)) {
+        const taskDocRef = doc(firestore, "task", employeeId);
+        const snap = await getDoc(taskDocRef);
 
-      toast.success("Selected tasks removed.");
+        if (!snap.exists()) continue;
+
+        const existingTasks = snap.data()?.tasks || [];
+        const updatedTasks = existingTasks.map((t: {taskId:string}) =>
+          userTasks.some((ut) => ut.id === t.taskId) ? { ...t, status: newStatus } : t
+        );
+
+        await updateDoc(taskDocRef, { tasks: updatedTasks });
+      }
+
+      toast.success(`Tasks marked as ${newStatus}`);
     } catch (err) {
       console.error(err);
-      toast.error("Failed to delete selected tasks.");
+      toast.error("Failed to update tasks");
     }
-  }, []);
+  }
+
+  function handleMarkOngoing() {
+    const selectedTasks = table.getSelectedRowModel().rows.map((r) => r.original);
+    const pendingTasks = selectedTasks.filter((t) => t.status === "Pending");
+
+    if (pendingTasks.length === 0) {
+      toast.error("No pending tasks selected");
+      return;
+    }
+
+    updateTaskStatus(pendingTasks, "Ongoing");
+  }
+
+  function handleMarkedCompleted() {
+    const selectedTasks = table.getSelectedRowModel().rows.map((r) => r.original);
+    const nonCompletedTasks = selectedTasks.filter((t) => t.status !== "Completed");
+
+    if (nonCompletedTasks.length === 0) {
+      toast.error("No tasks to mark as completed");
+      return;
+    }
+
+    updateTaskStatus(nonCompletedTasks, "Completed");
+  }
 
   return (
     <div className="w-full">
@@ -179,15 +223,28 @@ export default function TasksTable() {
               selectedRows: table.getSelectedRowModel().rows.map((r) => r.original),
               actions: [
                 {
-                  label: "Delete Selected",
-                  onClick: handleBulkDelete,
-                  className: "text-red-600",
+                  label: "Mark Ongoing",
+                  onClick: handleMarkOngoing,
+                  className: "text-blue-600",
+                },
+                {
+                  label: "Mark Completed",
+                  onClick: handleMarkedCompleted,
+                  className: "text-green-600",
                 },
               ],
             })}
+            onOpenChange={setOpen}
+            statusFilter={true}
           />
           <GenericTable table={table} />
           <Pagination table={table} />
+          <AddTaskModal
+            open={open}
+            onOpenChange={handleClose}
+            employees={usersMap}
+            task={selectedTask}
+          />
         </>
       )}
     </div>

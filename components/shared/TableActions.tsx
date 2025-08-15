@@ -18,6 +18,7 @@ interface TableActionProps<T> {
   searchPlaceholder?: string;
   //   AddPopover?: ReactNode;
   onOpenChange?: Dispatch<SetStateAction<boolean>>;
+  statusFilter?: boolean;
 }
 
 function TableActions<T extends object>({
@@ -26,9 +27,13 @@ function TableActions<T extends object>({
   menuContent,
   searchPlaceholder = "Filter by Name...",
   onOpenChange,
+  statusFilter = false,
 }: //   AddPopover,
 TableActionProps<T>) {
   const selectedRows = table.getFilteredSelectedRowModel().rows;
+  const handleStatusChange = (status: string) => {
+    table.getColumn("status")?.setFilterValue(status || undefined);
+  };
 
   return (
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 py-4">
@@ -65,6 +70,18 @@ TableActionProps<T>) {
           onChange={(e) => table.getColumn("name")?.setFilterValue(e.target.value)}
           className="max-w-sm w-full sm:w-[200px]"
         />
+
+        {statusFilter && (
+          <select
+            onChange={(e) => handleStatusChange(e.target.value)}
+            className="border rounded px-2 py-1 "
+          >
+            <option value="">All Status</option>
+            <option value="Pending">Pending</option>
+            <option value="Ongoing">Ongoing</option>
+            <option value="Completed">Completed</option>
+          </select>
+        )}
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

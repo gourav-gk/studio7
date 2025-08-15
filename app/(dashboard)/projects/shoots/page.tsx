@@ -155,7 +155,7 @@ export default function ProjectShootsPage() {
             role,
             projectId: selectedShoot.projectId,
             employeeId: empUid,
-            assignedDate,
+            assignedDate: now,
             deliveryDate: assignedDate,
             createdAt: now,
             status: "Pending",

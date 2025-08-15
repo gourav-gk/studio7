@@ -10,59 +10,108 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import React, { useEffect, useState } from "react";
-import { Deliverable } from "./types";
+import React, { useState, useEffect } from "react";
 import { firestore } from "@/lib/firebase";
-import {
-  doc,
-  setDoc,
-  addDoc,
-  collection,
-  serverTimestamp,
-} from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { toast } from "sonner";
+import { v4 as uuidv4 } from "uuid";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Task } from "./columns";
 
 interface AddTaskModalProps {
-  deliverable?: Deliverable | null;
   open: boolean;
   onOpenChange?: () => void;
+  employees?: Record<string, string>;
+  task?: Task;
 }
 
-function AddTaskModal({
-  deliverable,
-  open,
-  onOpenChange,
-}: AddTaskModalProps) {
-  const [name, setName] = useState("");
+function AddTaskModal({ open, onOpenChange, employees, task }: AddTaskModalProps) {
+  const [assignedName, setAssignedName] = useState("");
+  const [assignedTo, setAssignedTo] = useState("");
+  const [assignedDate, setAssignedDate] = useState("");
+  const [deliveryDate, setDeliveryDate] = useState("");
 
+  const isEdit = Boolean(task);
+
+  // Prefill fields if editing
   useEffect(() => {
-    if (deliverable) {
-      setName(deliverable.name);
+    if (isEdit && task) {
+      setAssignedName(task.name);
+      setAssignedTo(task.employeeId);
+      setAssignedDate(
+        task.assignedDate instanceof Date
+          ? task.assignedDate.toISOString().split("T")[0]
+          : task.assignedDate
+      );
+
+      setDeliveryDate(
+        task.deliveryDate instanceof Date
+          ? task.deliveryDate.toISOString().split("T")[0]
+          : task.deliveryDate
+      );
     } else {
-      setName("");
+      setAssignedName("");
+      setAssignedTo("");
+      setAssignedDate("");
+      setDeliveryDate("");
     }
-  }, [deliverable, open]);
+  }, [task, open]);
 
   const handleSubmit = async () => {
-    const isEdit = Boolean(deliverable);
-    const docId = deliverable?.deliverableId; // Changed from deliverable?.id to deliverable?.deliverableId
+    if (!assignedName.trim() || !assignedTo.trim() || !assignedDate || !deliveryDate) {
+      toast.error("Please fill in all fields");
+      return;
+    }
 
     try {
-      if (isEdit && docId) {
-        const ref = doc(firestore, "deliverables", docId);
-        await setDoc(ref, { name }, { merge: true });
+      const taskDocRef = doc(firestore, "task", assignedTo);
+      const snap = await getDoc(taskDocRef);
+
+      if (isEdit && task) {
+        // Edit mode: update the specific task inside tasks array
+        if (!snap.exists()) {
+          toast.error("Task not found");
+          return;
+        }
+        const tasks = snap.data()?.tasks || [];
+        const updatedTasks = tasks.map((t: { taskId: string }) =>
+          t.taskId === task.id
+            ? { ...t, name: assignedName, employeeId: assignedTo, assignedDate, deliveryDate }
+            : t
+        );
+        await updateDoc(taskDocRef, { tasks: updatedTasks });
+        toast.success("Task updated successfully");
       } else {
-        await addDoc(collection(firestore, "deliverables"), {
-          name,
-          createdAt: serverTimestamp(),
-        });
+        // Add mode: append new task
+        const newTask = {
+          taskId: uuidv4(),
+          name: assignedName,
+          employeeId: assignedTo,
+          assignedDate,
+          deliveryDate,
+          createdAt: new Date().toISOString(),
+          status: "Pending",
+          type: "Other",
+        };
+
+        if (snap.exists()) {
+          await updateDoc(taskDocRef, { tasks: [...(snap.data()?.tasks || []), newTask] });
+        } else {
+          await setDoc(taskDocRef, { tasks: [newTask] });
+        }
+        toast.success("Task added successfully");
       }
 
-      toast.success(isEdit ? "Deliverable updated" : "Deliverable added");
       onOpenChange?.();
     } catch (error) {
-      console.error("Error saving deliverable:", error);
-      toast.error("Failed to save deliverable");
+      console.error("Error saving task:", error);
+      toast.error("Failed to save task");
     }
   };
 
@@ -70,24 +119,44 @@ function AddTaskModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>
-            {deliverable ? "Edit Deliverable" : "Add Deliverable"}
-          </DialogTitle>
+          <DialogTitle>{isEdit ? "Edit Task" : "Add Task from Deliverable"}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <Input
-            placeholder="Deliverable Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            placeholder="Assigned Name"
+            value={assignedName}
+            onChange={(e) => setAssignedName(e.target.value)}
+          />
+          <Select value={assignedTo} onValueChange={(value) => setAssignedTo(value)}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select Employee" />
+            </SelectTrigger>
+            <SelectContent className="w-full">
+              {Object.entries(employees ?? {}).map(([id, name]) => (
+                <SelectItem key={id} value={id}>
+                  {name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Input
+            type="date"
+            placeholder="Assigned Date"
+            value={assignedDate}
+            onChange={(e) => setAssignedDate(e.target.value)}
+          />
+          <Input
+            type="date"
+            placeholder="Delivery Date"
+            value={deliveryDate}
+            onChange={(e) => setDeliveryDate(e.target.value)}
           />
         </div>
         <DialogFooter>
           <DialogClose asChild>
             <Button variant="outline">Cancel</Button>
           </DialogClose>
-          <Button onClick={handleSubmit} disabled={!name.trim()}>
-            Save
-          </Button>
+          <Button onClick={handleSubmit}>{isEdit ? "Update Task" : "Save Task"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

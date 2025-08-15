@@ -1,3 +1,5 @@
+import { Timestamp } from "firebase/firestore";
+
 export type TransactionType = "credit" | "debit";
 
 export type CreditMode = "cash" | "online";
@@ -8,7 +10,10 @@ export interface SalaryEntry {
   employeeId: string;
   employeeName: string;
   amount: number;
-  timestamp: Date;
+  // timestamp: Date;
+  timestamp: Date | Timestamp | { seconds: number; nanoseconds?: number } | string | null;
+  // If you expect date to sometimes be stored in the document itself
+  date?: string;
 }
 
 export interface TransactionItemBase {
@@ -50,6 +55,3 @@ export interface SalaryDoc {
   updatedAt: Date;
   employees: SalaryEntry[];
 }
-
-
-

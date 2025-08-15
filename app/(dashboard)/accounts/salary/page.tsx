@@ -4,11 +4,20 @@ import React, { useEffect, useMemo, useState } from "react";
 import { collection, onSnapshot, Timestamp } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
 import { SalaryDoc, SalaryEntry } from "../transaction/types";
-import { useReactTable, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, ColumnFiltersState, SortingState, VisibilityState } from "@tanstack/react-table";
+import {
+  useReactTable,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  ColumnFiltersState,
+  SortingState,
+  VisibilityState,
+  ColumnDef,
+} from "@tanstack/react-table";
 import { GenericTable } from "@/components/shared/GenericTable";
 import Pagination from "@/components/shared/Pagination";
 import TableSkeleton from "@/components/shared/skeletons/TableSkeleton";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
 import { CSVLink } from "react-csv";
@@ -16,14 +25,13 @@ import { ClientOnly } from "@/components/ClientOnly";
 
 interface SalaryTableItem extends SalaryEntry {
   date: string;
-  timestamp?: Date | null;
 }
 
-const getSalaryColumns = () => [
+const getSalaryColumns = (): ColumnDef<SalaryTableItem>[] => [
   {
     accessorKey: "date",
     header: "Date",
-    cell: ({ row }: any) => {
+    cell: ({ row }) => {
       const d = row.original.date;
       // d is YYYY-MM-DD; render as-is to avoid timezone issues
       try {
@@ -42,21 +50,34 @@ const getSalaryColumns = () => [
   {
     accessorKey: "employeeName",
     header: "Employee Name",
-    cell: ({ row }: any) => row.original.employeeName || "-",
+    cell: ({ row }) => row.original.employeeName || "-",
   },
   {
     accessorKey: "amount",
     header: "Salary Amount",
-    cell: ({ row }: any) => `₹${(row.original.amount || 0).toLocaleString()}`,
+    cell: ({ row }) => `₹${(row.original.amount || 0).toLocaleString()}`,
   },
   {
     accessorKey: "timestamp",
     header: "Paid At",
-    cell: ({ row }: any) => {
-      const ts: any = row.original.timestamp;
+    cell: ({ row }) => {
+      const ts = row.original.timestamp;
       if (!ts) return "-";
       try {
-        const dt = ts instanceof Date ? ts : new Date(ts);
+        let dt: Date;
+
+        if (ts instanceof Date) {
+          dt = ts;
+        } else if (ts instanceof Timestamp) {
+          dt = ts.toDate();
+        } else if (typeof ts === "string" || typeof ts === "number") {
+          dt = new Date(ts);
+        } else if (typeof ts === "object" && "seconds" in ts) {
+          dt = new Date(ts.seconds * 1000);
+        } else {
+          return "-";
+        }
+
         return isNaN(dt.getTime()) ? "-" : format(dt, "dd MMM yyyy HH:mm");
       } catch {
         return "-";
@@ -80,9 +101,9 @@ export default function SalaryPage() {
     const unsub = onSnapshot(collection(firestore, "salary"), (snapshot) => {
       const items: SalaryTableItem[] = [];
       snapshot.docs.forEach((d) => {
-        const docData = d.data() as SalaryDoc as any;
+        const docData = d.data() as SalaryDoc;
         const dateKey = d.id; // YYYY-MM-DD
-        const arr: SalaryTableItem[] = (docData?.employees || []).map((emp: any) => {
+        const arr: SalaryTableItem[] = (docData?.employees || []).map((emp) => {
           let normalizedTs: Date | null = null;
           const rawTs = emp?.timestamp;
           if (rawTs instanceof Timestamp) {
@@ -90,7 +111,7 @@ export default function SalaryPage() {
           } else if (rawTs instanceof Date) {
             normalizedTs = rawTs;
           } else if (rawTs && typeof rawTs === "object" && "seconds" in rawTs) {
-            normalizedTs = new Date((rawTs as any).seconds * 1000);
+            normalizedTs = new Date(rawTs.seconds * 1000);
           } else if (typeof rawTs === "string") {
             const parsed = new Date(rawTs);
             normalizedTs = isNaN(parsed.getTime()) ? null : parsed;
@@ -149,9 +170,9 @@ export default function SalaryPage() {
         </div>
         <div className="flex items-center gap-2">
           <ClientOnly>
-            <CSVLink 
-              data={filteredData} 
-              filename={`salary-${startDate || 'all'}-${endDate || 'all'}.csv`}
+            <CSVLink
+              data={filteredData}
+              filename={`salary-${startDate || "all"}-${endDate || "all"}.csv`}
               className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
             >
               Export CSV

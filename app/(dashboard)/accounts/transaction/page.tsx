@@ -4,7 +4,16 @@ import React, { useEffect, useMemo, useState } from "react";
 import { collection, onSnapshot } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
 import { TransactionsDoc, TransactionItem } from "./types";
-import { useReactTable, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, ColumnFiltersState, SortingState, VisibilityState } from "@tanstack/react-table";
+import {
+  useReactTable,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  ColumnFiltersState,
+  SortingState,
+  VisibilityState,
+} from "@tanstack/react-table";
 import { getTransactionColumns } from "./columns";
 import { GenericTable } from "@/components/shared/GenericTable";
 import Pagination from "@/components/shared/Pagination";
@@ -14,7 +23,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import AddTransactionModal from "./AddTransactionModal";
 import { CSVLink } from "react-csv";
- 
 
 export default function TransactionsPage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -32,9 +40,12 @@ export default function TransactionsPage() {
     const unsub = onSnapshot(collection(firestore, "transactions"), (snapshot) => {
       const items: TransactionItem[] = [];
       snapshot.docs.forEach((d) => {
-        const docData = d.data() as TransactionsDoc as any;
+        const docData = d.data() as TransactionsDoc;
         const dateKey = d.id; // YYYY-MM-DD
-        const arr: TransactionItem[] = (docData?.items || []).map((it) => ({ ...it, date: it.date || dateKey }));
+        const arr: TransactionItem[] = (docData?.items || []).map((it) => ({
+          ...it,
+          date: it.date || dateKey,
+        }));
         items.push(...arr);
       });
       setData(items.sort((a, b) => (a.date > b.date ? -1 : 1)));
@@ -54,8 +65,12 @@ export default function TransactionsPage() {
   }, [data, startDate, endDate]);
 
   const summary = useMemo(() => {
-    const credits = filteredData.filter(t => t.type === "credit").reduce((sum, t) => sum + t.amount, 0);
-    const debits = filteredData.filter(t => t.type === "debit").reduce((sum, t) => sum + t.amount, 0);
+    const credits = filteredData
+      .filter((t) => t.type === "credit")
+      .reduce((sum, t) => sum + t.amount, 0);
+    const debits = filteredData
+      .filter((t) => t.type === "debit")
+      .reduce((sum, t) => sum + t.amount, 0);
     const net = credits - debits;
     return { credits, debits, net };
   }, [filteredData]);
@@ -84,9 +99,9 @@ export default function TransactionsPage() {
           <p className="text-muted-foreground">View all credits and debits</p>
         </div>
         <div className="flex items-center gap-2">
-          <CSVLink 
-            data={filteredData} 
-            filename={`transactions-${startDate || 'all'}-${endDate || 'all'}.csv`}
+          <CSVLink
+            data={filteredData}
+            filename={`transactions-${startDate || "all"}-${endDate || "all"}.csv`}
             className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
           >
             Export CSV
@@ -107,7 +122,9 @@ export default function TransactionsPage() {
         </div>
         <div className="bg-card border rounded-lg p-4">
           <h3 className="text-sm font-medium text-muted-foreground">Net Balance</h3>
-          <p className={`text-2xl font-bold ${summary.net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+          <p
+            className={`text-2xl font-bold ${summary.net >= 0 ? "text-green-600" : "text-red-600"}`}
+          >
             ₹{summary.net.toLocaleString()}
           </p>
         </div>
@@ -133,7 +150,11 @@ export default function TransactionsPage() {
         <TableSkeleton columnCount={6} rowCount={5} />
       ) : (
         <>
-          <TableActions table={table} data={filteredData} searchPlaceholder="Filter by purpose..." />
+          <TableActions
+            table={table}
+            data={filteredData}
+            searchPlaceholder="Filter by purpose..."
+          />
           <GenericTable table={table} />
           <Pagination table={table} />
         </>
@@ -143,5 +164,3 @@ export default function TransactionsPage() {
     </div>
   );
 }
-
-

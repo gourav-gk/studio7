@@ -1,13 +1,26 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { MultiSelect, Option } from "@/components/shared/MultiSelect";
-import { collection, doc, getDocs, setDoc, updateDoc, getDoc, onSnapshot } from "firebase/firestore";
+import { collection, doc, setDoc, updateDoc, getDoc, onSnapshot } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
@@ -45,16 +58,22 @@ export default function AddTransactionModal({ open, onOpenChange }: Props) {
 
   useEffect(() => {
     if (!open) return;
-    const unsubscribe = onSnapshot(collection(firestore, "users"), (snapshot) => {
-      const arr = snapshot.docs.map((d) => {
-        const data: any = d.data();
-        const name = data?.name || data?.displayName || data?.fullName || data?.email || d.id;
-        return { uId: d.id, name } as UserDoc;
-      }).sort((a, b) => a.name.localeCompare(b.name));
-      setEmployees(arr);
-    }, (error) => {
-      console.error("Failed to subscribe users:", error);
-    });
+    const unsubscribe = onSnapshot(
+      collection(firestore, "users"),
+      (snapshot) => {
+        const arr = snapshot.docs
+          .map((d) => {
+            const data = d.data();
+            const name = data?.name || data?.displayName || data?.fullName || data?.email || d.id;
+            return { uId: d.id, name } as UserDoc;
+          })
+          .sort((a, b) => a.name.localeCompare(b.name));
+        setEmployees(arr);
+      },
+      (error) => {
+        console.error("Failed to subscribe users:", error);
+      }
+    );
     return () => unsubscribe();
   }, [open]);
 
@@ -138,7 +157,7 @@ export default function AddTransactionModal({ open, onOpenChange }: Props) {
       // Using updateDoc with a field path using Firestore arrayUnion would be ideal, but we want to keep types intact.
       // We'll do a small fetch by getDocs on the specific doc via setDoc merge with items default [] then updateDoc to append.
       const existingSnap = await getDoc(txnDocRef);
-      const existing = existingSnap.exists() ? (existingSnap.data() as TransactionsDoc) : (null as any);
+      const existing = existingSnap.exists() ? (existingSnap.data() as TransactionsDoc) : null;
       const nextItems = [...(existing?.items || []), item];
       await updateDoc(txnDocRef, { items: nextItems, updatedAt: now });
 
@@ -155,7 +174,7 @@ export default function AddTransactionModal({ open, onOpenChange }: Props) {
           { merge: true }
         );
         const existingSalarySnap = await getDoc(salaryDocRef);
-        const existingSalary = existingSalarySnap.exists() ? existingSalarySnap.data() as any : null;
+        const existingSalary = existingSalarySnap.exists() ? existingSalarySnap.data() : null;
         const prevEmployees = existingSalary?.employees || [];
         const mergedEmployees = [...prevEmployees, ...(item.employees || [])];
         await updateDoc(salaryDocRef, { employees: mergedEmployees, updatedAt: now });
@@ -174,7 +193,8 @@ export default function AddTransactionModal({ open, onOpenChange }: Props) {
     if (!amount || Number(amount) <= 0) return false;
     if (!purpose.trim()) return false;
     if (txnType === "credit" && creditMode === "online" && !utr.trim()) return false;
-    if (txnType === "debit" && debitType === "employee_salary" && selectedEmployeeIds.length === 0) return false;
+    if (txnType === "debit" && debitType === "employee_salary" && selectedEmployeeIds.length === 0)
+      return false;
     return true;
   };
 
@@ -193,7 +213,7 @@ export default function AddTransactionModal({ open, onOpenChange }: Props) {
 
           <div className="space-y-2">
             <Label>Transaction Type</Label>
-            <Select value={txnType} onValueChange={(v) => setTxnType(v as any)}>
+            <Select value={txnType} onValueChange={(v) => setTxnType(v as "credit" | "debit")}>
               <SelectTrigger>
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>
@@ -206,12 +226,21 @@ export default function AddTransactionModal({ open, onOpenChange }: Props) {
 
           <div className="space-y-2">
             <Label>Amount</Label>
-            <Input type="number" min="0" value={amount} onChange={(e) => setAmount(e.target.value)} />
+            <Input
+              type="number"
+              min="0"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+            />
           </div>
 
           <div className="space-y-2">
             <Label>Purpose</Label>
-            <Input value={purpose} onChange={(e) => setPurpose(e.target.value)} placeholder="Purpose / where used" />
+            <Input
+              value={purpose}
+              onChange={(e) => setPurpose(e.target.value)}
+              placeholder="Purpose / where used"
+            />
           </div>
         </div>
 
@@ -232,7 +261,11 @@ export default function AddTransactionModal({ open, onOpenChange }: Props) {
             {creditMode === "online" && (
               <div className="space-y-2">
                 <Label>UTR No.</Label>
-                <Input value={utr} onChange={(e) => setUtr(e.target.value)} placeholder="Enter UTR number" />
+                <Input
+                  value={utr}
+                  onChange={(e) => setUtr(e.target.value)}
+                  placeholder="Enter UTR number"
+                />
               </div>
             )}
           </div>
@@ -271,11 +304,11 @@ export default function AddTransactionModal({ open, onOpenChange }: Props) {
           <DialogClose asChild>
             <Button variant="outline">Cancel</Button>
           </DialogClose>
-          <Button onClick={handleSubmit} disabled={!canSubmit()}>Submit</Button>
+          <Button onClick={handleSubmit} disabled={!canSubmit()}>
+            Submit
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
-
-
