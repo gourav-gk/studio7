@@ -28,6 +28,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/context/AuthProvider";
+import { ClientOnly } from "@/components/ClientOnly";
 
 const data = {
   navMain: [
@@ -63,7 +64,6 @@ const data = {
       items: [
         { title: "View", url: "/employee/view" },
         { title: "Employee Task", url: "/employee/employee-task" },
-        { title: "Attendance", url: "/employee/attendance" },
         { title: "Salary", url: "/employee/salary" },
       ],
     },
@@ -96,6 +96,10 @@ const data = {
       title: "Attendance",
       url: "/attendance",
       icon: CheckSquare,
+      items: [
+        { title: "View Attendance", url: "/attendance" },
+        { title: "Add Attendance", url: "/attendance/add" },
+      ],
     },
     {
       title: "Accounts",
@@ -137,10 +141,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <ClientOnly>
+          <NavMain items={data.navMain} />
+        </ClientOnly>
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={userDisplay} />
+        <ClientOnly>
+          <NavUser user={userDisplay} />
+        </ClientOnly>
       </SidebarFooter>
     </Sidebar>
   );

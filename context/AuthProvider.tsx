@@ -25,8 +25,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
       setIsAuthLoaded(true);
-      const storedPerms = localStorage.getItem("permissions");
-      setPermissions(storedPerms ? storedPerms.split(",") : []);
+      // Only access localStorage on client side
+      if (typeof window !== 'undefined') {
+        const storedPerms = localStorage.getItem("permissions");
+        setPermissions(storedPerms ? storedPerms.split(",") : []);
+      }
     });
 
     return () => unsubscribe();
