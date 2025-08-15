@@ -19,10 +19,16 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
       return;
     }
 
+    // Allow access to dashboard and common routes without specific permissions
+    const allowedRoutes = ["dashboard", "employee", "attendance", "accounts", "projects", "clients", "enquiry", "events", "packages", "shoots", "deliverables", "task"];
     const routeSegment = pathname.split("/")[1];
-    if (routeSegment && !permissions.includes(routeSegment)) {
-      router.replace("/unauthorized");
-      return;
+    
+    if (routeSegment && !allowedRoutes.includes(routeSegment)) {
+      // Check if user has specific permissions for this route
+      if (!permissions.includes(routeSegment)) {
+        router.replace("/unauthorized");
+        return;
+      }
     }
 
     setAllowed(true);
